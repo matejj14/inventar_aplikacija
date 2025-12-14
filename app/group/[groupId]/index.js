@@ -11,6 +11,12 @@ import { useLocalSearchParams } from 'expo-router';
 import AddCategoryModal from '../../../components/AddCategoryModal';
 import { addCategory, getCategories } from '../../../services/categoryService';
 
+//za slike
+import { uploadCategoryImage } from '../../../services/categoryImageService';
+import { pickFromGallery, takePhoto } from '../../../components/ImagePickerSheet';
+import { Alert, Image } from 'react-native';
+
+
 export default function GroupDashboard() {
   const params = useLocalSearchParams();
   const groupId = params?.groupId;
@@ -37,6 +43,37 @@ export default function GroupDashboard() {
     loadCategories();
   }
 
+  //funkcija za izbiro slike
+  async function handleImagePick(category) {
+    Alert.alert(
+      'Slika kategorije',
+      'Izberi vir',
+      [
+        {
+          text: 'Galerija',
+          onPress: async () => {
+            const uri = await pickFromGallery();
+            if (uri) {
+              await uploadCategoryImage(groupId, category.id, uri);
+              loadCategories();
+            }
+          },
+        },
+        {
+          text: 'Kamera',
+          onPress: async () => {
+            const uri = await takePhoto();
+            if (uri) {
+              await uploadCategoryImage(groupId, category.id, uri);
+              loadCategories();
+            }
+          },
+        },
+        { text: 'Prekliči', style: 'cancel' },
+      ]
+    );
+  }
+
   function renderCategory({ item }) {
     return (
       <View style={styles.card}>
@@ -50,9 +87,19 @@ export default function GroupDashboard() {
         <Text style={styles.brand}>{item.brand}</Text>
 
         <View style={styles.cardBody}>
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imageText}>📷</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.imagePlaceholder}
+            onPress={() => handleImagePick(item)}
+          >
+            {item.imageUrl ? (
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={{ width: 80, height: 80, borderRadius: 12 }}
+              />
+            ) : (
+              <Text style={styles.imageText}>📷</Text>
+            )}
+          </TouchableOpacity>
 
           <View style={styles.stats}>
             {item.hasAssembly ? (
