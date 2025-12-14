@@ -16,6 +16,11 @@ import { uploadCategoryImage } from '../../../services/categoryImageService';
 import { pickFromGallery, takePhoto } from '../../../components/ImagePickerSheet';
 import { Alert, Image } from 'react-native';
 
+//import { Alert } from 'react-native';
+import { toggleFavorite, deleteCategory } from '../../../services/categoryService';
+
+import { router } from 'expo-router';
+
 
 export default function GroupDashboard() {
   const params = useLocalSearchParams();
@@ -34,7 +39,13 @@ export default function GroupDashboard() {
 
   async function loadCategories() {
     const data = await getCategories(groupId);
-    setCategories(data);
+
+    const sorted = [...data].sort((a, b) => {
+      if (a.favorite === b.favorite) return 0;
+      return a.favorite ? -1 : 1;
+    });
+
+    setCategories(sorted);
   }
 
   async function handleAddCategory(data) {
@@ -74,12 +85,71 @@ export default function GroupDashboard() {
     );
   }
 
+
+  function openMenu(category) {
+    Alert.alert(
+      category.name,
+      'Izberi možnost',
+      [
+        {
+          text: category.favorite ? 'Odstrani iz priljubljenih' : 'Označi kot priljubljeno',
+          onPress: async () => {
+            await toggleFavorite(groupId, category.id, !category.favorite);
+            loadCategories();
+          },
+        },
+        {
+          text: 'Uredi',
+          onPress: () => {
+            Alert.alert('Info', 'Urejanje pride v naslednjem koraku.');
+          },
+        },
+        {
+          text: 'Izbriši',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Potrditev',
+              'Res želiš izbrisati to kategorijo?',
+              [
+                { text: 'Prekliči', style: 'cancel' },
+                {
+                  text: 'Izbriši',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await deleteCategory(groupId, category.id);
+                    loadCategories();
+                  },
+                },
+              ]
+            );
+          },
+        },
+        { text: 'Prekliči', style: 'cancel' },
+      ]
+    );
+  }
+
+
   function renderCategory({ item }) {
-    return (
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() =>
+        router.push(`/group/${groupId}/category/${item.id}`)
+      }
+    >
       <View style={styles.card}>
+        {/* zgornja vrstica */}
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>{item.name}</Text>
-          <TouchableOpacity>
+          <Text style={styles.cardTitle}>
+            {item.favorite ? '⭐ ' : ''}
+            {item.name}
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => openMenu(item)}
+          >
             <Text style={styles.menu}>⋮</Text>
           </TouchableOpacity>
         </View>
@@ -87,19 +157,9 @@ export default function GroupDashboard() {
         <Text style={styles.brand}>{item.brand}</Text>
 
         <View style={styles.cardBody}>
-          <TouchableOpacity
-            style={styles.imagePlaceholder}
-            onPress={() => handleImagePick(item)}
-          >
-            {item.imageUrl ? (
-              <Image
-                source={{ uri: item.imageUrl }}
-                style={{ width: 80, height: 80, borderRadius: 12 }}
-              />
-            ) : (
-              <Text style={styles.imageText}>📷</Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.imageText}>📷</Text>
+          </View>
 
           <View style={styles.stats}>
             {item.hasAssembly ? (
@@ -117,8 +177,10 @@ export default function GroupDashboard() {
           </View>
         </View>
       </View>
-    );
-  }
+    </TouchableOpacity>
+  );
+}
+
 
   return (
     <View style={styles.container}>

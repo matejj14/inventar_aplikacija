@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { getLocalUser, saveLocalUser } from '../services/userService';
 import { createGroup, findGroupByName, joinGroup } from '../services/groupService';
+import { saveLastGroup } from '../services/groupSessionService';
+import { getLastGroup } from '../services/groupSessionService';
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
@@ -23,11 +25,18 @@ export default function HomeScreen() {
   const [groupName, setGroupName] = useState('');
   const [groupPassword, setGroupPassword] = useState('');
 
+
   useEffect(() => {
     (async () => {
       const u = await getLocalUser();
       if (u) {
         setUser(u);
+
+        const lastGroup = await getLastGroup();
+        if (lastGroup) {
+          router.replace(`/group/${lastGroup}`);
+          return;
+        }
       }
       setLoading(false);
     })();
@@ -53,6 +62,7 @@ export default function HomeScreen() {
     }
     try {
       const res = await createGroup(groupName.trim(), groupPassword, user);
+      await saveLastGroup(res.id);
       router.push(`/group/${res.id}`);
       setGroupName('');
       setGroupPassword('');
@@ -76,6 +86,7 @@ export default function HomeScreen() {
         return;
       }
       await joinGroup(group.id, groupPassword, user);
+      await saveLastGroup(group.id);
       router.push(`/group/${group.id}`);
       setGroupName('');
       setGroupPassword('');
