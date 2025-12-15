@@ -139,6 +139,16 @@ export default function GroupDashboard() {
         router.push(`/group/${groupId}/category/${item.id}`)
       }
     >
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Kategorije</Text>
+
+        <TouchableOpacity
+          onPress={() => router.push(`/group/${groupId}/log`)}
+        >
+          <Text style={styles.logButton}>Log</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.card}>
         {/* zgornja vrstica */}
         <View style={styles.cardHeader}>
@@ -279,4 +289,20 @@ const styles = StyleSheet.create({
     fontSize: 36,
     color: '#003366',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  logButton: {
+    fontSize: 16,
+    color: '#1565c0',
+    fontWeight: '600',
+  },
+
 });

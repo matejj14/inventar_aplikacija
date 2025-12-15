@@ -15,6 +15,8 @@ import { addMachine, getMachines, updateMachineStatus } from '../../../../../../
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../../../../../firebaseConfig';
 
+import { addLog } from '../../../../../../../services/logService';
+
 export default function ModelMachines() {
   const { groupId, categoryId, modelId } = useLocalSearchParams();
 
@@ -52,13 +54,21 @@ export default function ModelMachines() {
     setMachines(data);
   }
 
-  async function handleAdd() {
+ async function handleAdd() {
     await addMachine(groupId, categoryId, modelId, {
-      serialNumber: serial || null,
-      year,
-      notes,
-      status: 'stock',
-      assembled,
+        serialNumber: serial || null,
+        year,
+        notes,
+        status: 'stock',
+        assembled,
+    });
+
+    // 🔴 TEST LOG (zelo pomembno)
+    await addLog(groupId, {
+        type: 'ADD_MACHINE',
+        machineLabel: serial || 'Brez serijske',
+        categoryId,
+        modelId,
     });
 
     setSerial('');
@@ -83,19 +93,28 @@ export default function ModelMachines() {
             {
                 text: 'Na zalogi',
                 onPress: async () => {
-                await updateMachineStatus(
+                    await updateMachineStatus(
                     groupId,
                     categoryId,
                     modelId,
                     machine.id,
                     {
-                    status: 'stock',
-                    customerName: null,
-                    customerPhone: null,
-                    reservedAt: null,
+                        status: 'stock',
+                        customerName: null,
+                        customerPhone: null,
+                        reservedAt: null,
                     }
-                );
-                load();
+                    );
+
+                    await addLog(groupId, {
+                    type: 'RETURNED',
+                    machineId: machine.id,
+                    machineLabel: machine.serialNumber || 'Brez serijske',
+                    categoryId,
+                    modelId,
+                    });
+
+                    load();
                 },
             },
             {
@@ -105,14 +124,23 @@ export default function ModelMachines() {
             {
                 text: 'Prodano',
                 onPress: async () => {
-                await updateMachineStatus(
+                    await updateMachineStatus(
                     groupId,
                     categoryId,
                     modelId,
                     machine.id,
                     { status: 'sold' }
-                );
-                load();
+                    );
+
+                    await addLog(groupId, {
+                    type: 'SOLD',
+                    machineId: machine.id,
+                    machineLabel: machine.serialNumber || 'Brez serijske',
+                    categoryId,
+                    modelId,
+                    });
+
+                    load();
                 },
             },
             { text: 'Prekliči', style: 'cancel' },
@@ -129,6 +157,33 @@ export default function ModelMachines() {
         machineId,
         { status: newStatus }
     );
+
+    await addLog(groupId, {
+        type: 'RESERVED',
+        machineId: selectedMachine.id,
+        machineLabel: selectedMachine.serialNumber || 'Brez serijske',
+        categoryId,
+        modelId,
+        meta: {
+            customerName,
+        },
+    });
+
+    await addLog(groupId, {
+        type: 'SOLD',
+        machineId: machine.id,
+        machineLabel: machine.serialNumber || 'Brez serijske',
+        categoryId,
+        modelId,
+    });
+
+    await addLog(groupId, {
+        type: 'RETURNED',
+        machineId: machine.id,
+        machineLabel: machine.serialNumber || 'Brez serijske',
+        categoryId,
+        modelId,
+    });
     load();
     }
 
@@ -270,17 +325,29 @@ export default function ModelMachines() {
                 <TouchableOpacity
                 onPress={async () => {
                     await updateMachineStatus(
-                    groupId,
-                    categoryId,
-                    modelId,
-                    selectedMachine.id,
-                    {
-                        status: 'reserved',
-                        customerName,
-                        customerPhone,
-                        reservedAt: Date.now(),
-                    }
+                        groupId,
+                        categoryId,
+                        modelId,
+                        selectedMachine.id,
+                        {
+                            status: 'reserved',
+                            customerName,
+                            customerPhone,
+                            reservedAt: Date.now(),
+                        }
                     );
+
+                    await addLog(groupId, {
+                        type: 'RESERVED',
+                        machineId: selectedMachine.id,
+                        machineLabel: selectedMachine.serialNumber || 'Brez serijske',
+                        categoryId,
+                        modelId,
+                        meta: {
+                            customerName,
+                        },
+                    });
+
                     setReserveModal(false);
                     load();
                 }}
