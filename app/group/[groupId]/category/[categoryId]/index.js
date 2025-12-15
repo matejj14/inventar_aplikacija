@@ -14,6 +14,9 @@ import { addModel, getModels } from '../../../../../services/modelService';
 
 import { router } from 'expo-router';
 
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+
 export default function CategoryModels() {
   const { groupId, categoryId } = useLocalSearchParams();
 
@@ -21,11 +24,13 @@ export default function CategoryModels() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modelName, setModelName] = useState('');
 
-  useEffect(() => {
-    load();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+        loadModels();
+    }, [])
+  );
 
-  async function load() {
+  async function loadModels() {
     const data = await getModels(groupId, categoryId);
     setModels(data);
   }
@@ -35,7 +40,7 @@ export default function CategoryModels() {
     await addModel(groupId, categoryId, modelName.trim());
     setModelName('');
     setModalVisible(false);
-    load();
+    loadModels();
   }
 
   return (
@@ -54,7 +59,8 @@ export default function CategoryModels() {
             >
             <View style={styles.card}>
                 <Text style={styles.title}>{item.name}</Text>
-                <Text style={styles.sub}>Na zalogi: 0 · Ara: 0</Text>
+                <Text>Na zalogi: {item.stats?.stock || 0}</Text>
+                <Text>Ara: {item.stats?.reserved || 0}</Text>
             </View>
             </TouchableOpacity>
         )}

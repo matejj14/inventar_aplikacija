@@ -15,6 +15,9 @@ import { addMachine, getMachines, updateMachineStatus } from '../../../../../../
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../../../../../firebaseConfig';
 
+import { recalcModelStats } from '../../../../../../../services/modelService';
+import { recalcCategoryStats } from '../../../../../../../services/categoryService';
+
 import { addLog } from '../../../../../../../services/logService';
 
 export default function ModelMachines() {
@@ -62,6 +65,8 @@ export default function ModelMachines() {
         status: 'stock',
         assembled,
     });
+    await recalcModelStats(groupId, categoryId, modelId);
+    await recalcCategoryStats(groupId, categoryId);
 
     // 🔴 TEST LOG (zelo pomembno)
     await addLog(groupId, {
@@ -105,6 +110,9 @@ export default function ModelMachines() {
                         reservedAt: null,
                     }
                     );
+
+                    await recalcModelStats(groupId, categoryId, modelId);
+                    await recalcCategoryStats(groupId, categoryId);
 
                     await addLog(groupId, {
                     type: 'RETURNED',

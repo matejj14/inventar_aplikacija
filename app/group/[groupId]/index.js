@@ -21,6 +21,9 @@ import { toggleFavorite, deleteCategory } from '../../../services/categoryServic
 
 import { router } from 'expo-router';
 
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+
 
 export default function GroupDashboard() {
   const params = useLocalSearchParams();
@@ -31,11 +34,13 @@ export default function GroupDashboard() {
   const [modalVisible, setModalVisible] = useState(false);
 
   // LOAD CATEGORIES
-  useEffect(() => {
-    if (groupId) {
-      loadCategories();
-    }
-  }, [groupId]);
+  useFocusEffect(
+    useCallback(() => {
+      if (groupId) {
+        loadCategories();
+      }
+    }, [groupId])
+  );
 
   async function loadCategories() {
     const data = await getCategories(groupId);
@@ -174,14 +179,14 @@ export default function GroupDashboard() {
           <View style={styles.stats}>
             {item.hasAssembly ? (
               <>
-                <Text style={styles.stat}>Sestavljeni: 0</Text>
-                <Text style={styles.stat}>Nesestavljeni: 0</Text>
-                <Text style={styles.stat}>Plačana ara: 0</Text>
+                <Text>Sestavljeni: {item.stats?.assembled || 0}</Text>
+                <Text>Nesestavljeni: {item.stats?.disassembled || 0}</Text>
+                <Text>Plačana ara: {item.stats?.reserved || 0}</Text>
               </>
             ) : (
               <>
-                <Text style={styles.stat}>Na zalogi: 0</Text>
-                <Text style={styles.stat}>Plačana ara: 0</Text>
+                <Text>Na zalogi: {item.stats?.stock || 0}</Text>
+                <Text>Plačana ara: {item.stats?.reserved || 0}</Text>
               </>
             )}
           </View>

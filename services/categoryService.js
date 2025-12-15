@@ -1,7 +1,6 @@
 // services/categoryService.js
 import { db } from '../firebaseConfig';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 
 export async function addCategory(groupId, data) {
@@ -32,4 +31,37 @@ export async function toggleFavorite(groupId, categoryId, value) {
 export async function deleteCategory(groupId, categoryId) {
   const ref = doc(db, `groups/${groupId}/categories/${categoryId}`);
   await deleteDoc(ref);
+}
+
+export async function recalcCategoryStats(groupId, categoryId) {  //vedno kličeš za recalcModelStats
+  const modelsRef = collection(
+    db,
+    `groups/${groupId}/categories/${categoryId}/models`
+  );
+
+  const snap = await getDocs(modelsRef);
+
+  const stats = {
+    total: 0,
+    stock: 0,
+    reserved: 0,
+    sold: 0,
+    assembled: 0,
+    disassembled: 0,
+  };
+
+  snap.forEach(d => {
+    const m = d.data().stats;
+    if (!m) return;
+
+    stats.total += m.total || 0;
+    stats.stock += m.stock || 0;
+    stats.reserved += m.reserved || 0;
+    stats.sold += m.sold || 0;
+    stats.assembled += m.assembled || 0;
+    stats.disassembled += m.disassembled || 0;
+  });
+
+  const catRef = doc(db, `groups/${groupId}/categories/${categoryId}`);
+  await updateDoc(catRef, { stats });
 }
