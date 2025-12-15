@@ -12,6 +12,8 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { addModel, getModels } from '../../../../../services/modelService';
 
+import { router } from 'expo-router';
+
 export default function CategoryModels() {
   const { groupId, categoryId } = useLocalSearchParams();
 
@@ -42,12 +44,21 @@ export default function CategoryModels() {
         data={models}
         keyExtractor={i => i.id}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.title}>{item.name}</Text>
-            <Text style={styles.sub}>Na zalogi: 0 · Ara: 0</Text>
-          </View>
+            <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() =>
+                router.push(
+                `/group/${groupId}/category/${categoryId}/model/${item.id}`
+                )
+            }
+            >
+            <View style={styles.card}>
+                <Text style={styles.title}>{item.name}</Text>
+                <Text style={styles.sub}>Na zalogi: 0 · Ara: 0</Text>
+            </View>
+            </TouchableOpacity>
         )}
-      />
+        />
 
       {/* + gumb */}
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
