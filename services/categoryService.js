@@ -28,6 +28,11 @@ export async function toggleFavorite(groupId, categoryId, value) {
   await updateDoc(ref, { favorite: value });
 }
 
+export async function updateCategory(groupId, categoryId, data) {
+  const ref = doc(db, `groups/${groupId}/categories/${categoryId}`);
+  await updateDoc(ref, data);
+}
+
 export async function deleteCategory(groupId, categoryId) {
   const ref = doc(db, `groups/${groupId}/categories/${categoryId}`);
   await deleteDoc(ref);
