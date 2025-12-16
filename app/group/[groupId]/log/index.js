@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { getLogs } from '../../../../services/logService';
+
+import { undoLog } from '../../../../services/undoService';
 
 export default function LogScreen() {
   const { groupId } = useLocalSearchParams();
@@ -26,9 +35,35 @@ export default function LogScreen() {
         return `Prodano: ${log.machineLabel}`;
         case 'RETURNED':
         return `Vrnjeno na zalogo: ${log.machineLabel}`;
+        case 'UNDO_SOLD':
+        return `Razveljavljena prodaja`;
+        case 'UNDO_RESERVED':
+        return `Razveljavljena ara`;
         default:
         return log.type;
       }
+    }
+
+    function canUndo(log) {
+        return log.type === 'SOLD' || log.type === 'RESERVED';
+    }
+
+    function confirmUndo(log) {
+    Alert.alert(
+        'Razveljavi spremembo',
+        'Ali res želiš razveljaviti to dejanje?',
+        [
+        { text: 'Prekliči', style: 'cancel' },
+        {
+            text: 'UNDO',
+            style: 'destructive',
+            onPress: async () => {
+            await undoLog(groupId, log);
+            load();
+            },
+        },
+        ]
+      );
     }
 
   return (
@@ -36,14 +71,23 @@ export default function LogScreen() {
       <FlatList
         data={logs}
         keyExtractor={(i) => i.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text>{label(item)}</Text>
+       renderItem={({ item }) => (
+        <View style={styles.card}>
+            <Text style={styles.title}>{label(item)}</Text>
             <Text style={styles.date}>
-              {new Date(item.createdAt).toLocaleString()}
+            {new Date(item.createdAt).toLocaleString()}
             </Text>
-          </View>
-        )}
+
+            {canUndo(item) && (
+            <TouchableOpacity
+                style={styles.undoButton}
+                onPress={() => confirmUndo(item)}
+            >
+                <Text style={styles.undoText}>UNDO</Text>
+            </TouchableOpacity>
+            )}
+        </View>
+       )}
       />
     </View>
   );
@@ -62,5 +106,21 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 12,
     color: '#666',
+  },
+  undoButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 8,
+  },
+  undoText: {
+    color: '#1565c0',
+    fontWeight: '600',
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
