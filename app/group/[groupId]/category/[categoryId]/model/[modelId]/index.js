@@ -140,6 +140,9 @@ export default function ModelMachines() {
                     { status: 'sold' }
                     );
 
+                    await recalcModelStats(groupId, categoryId, modelId);
+                    await recalcCategoryStats(groupId, categoryId);
+
                     await addLog(groupId, {
                     type: 'SOLD',
                     machineId: machine.id,
@@ -344,6 +347,9 @@ export default function ModelMachines() {
                             reservedAt: Date.now(),
                         }
                     );
+
+                    await recalcModelStats(groupId, categoryId, modelId);
+                    await recalcCategoryStats(groupId, categoryId);
 
                     await addLog(groupId, {
                         type: 'RESERVED',

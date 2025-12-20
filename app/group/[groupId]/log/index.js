@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,87 +7,99 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { getLogs } from '../../../../services/logService';
+import { useGlobalSearchParams, useFocusEffect } from 'expo-router';
 
+import { getLogs } from '../../../../services/logService';
 import { undoLog } from '../../../../services/undoService';
 
 export default function LogScreen() {
-  const { groupId } = useLocalSearchParams();
+  const params = useGlobalSearchParams();
+  const groupId = Array.isArray(params.groupId)
+    ? params.groupId[0]
+    : params.groupId;
+
   const [logs, setLogs] = useState([]);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
+    if (!groupId) return;
     const data = await getLogs(groupId);
     setLogs(data);
-  }
+  }, [groupId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   function label(log) {
     switch (log.type) {
-        case 'ADD_MACHINE':
+      case 'ADD_MACHINE':
         return `Dodano: ${log.machineLabel}`;
-        case 'RESERVED':
-        return `Ara: ${log.machineLabel} (${log.meta?.customerName})`;
-        case 'SOLD':
+      case 'RESERVED':
+        return `Ara: ${log.machineLabel} (${log.meta?.customerName || '—'})`;
+      case 'SOLD':
         return `Prodano: ${log.machineLabel}`;
-        case 'RETURNED':
+      case 'RETURNED':
         return `Vrnjeno na zalogo: ${log.machineLabel}`;
-        case 'UNDO_SOLD':
+      case 'UNDO_SOLD':
         return `Razveljavljena prodaja`;
-        case 'UNDO_RESERVED':
+      case 'UNDO_RESERVED':
         return `Razveljavljena ara`;
-        default:
+      default:
         return log.type;
-      }
     }
+  }
 
-    function canUndo(log) {
-        return log.type === 'SOLD' || log.type === 'RESERVED';
-    }
+  function canUndo(log) {
+    return log.type === 'SOLD' || log.type === 'RESERVED';
+  }
 
-    function confirmUndo(log) {
+  function confirmUndo(log) {
     Alert.alert(
-        'Razveljavi spremembo',
-        'Ali res želiš razveljaviti to dejanje?',
-        [
+      'Razveljavi spremembo',
+      'Ali res želiš razveljaviti to dejanje?',
+      [
         { text: 'Prekliči', style: 'cancel' },
         {
-            text: 'UNDO',
-            style: 'destructive',
-            onPress: async () => {
+          text: 'UNDO',
+          style: 'destructive',
+          onPress: async () => {
             await undoLog(groupId, log);
             load();
-            },
+          },
         },
-        ]
-      );
-    }
+      ]
+    );
+  }
 
   return (
     <View style={styles.container}>
       <FlatList
         data={logs}
         keyExtractor={(i) => i.id}
-       renderItem={({ item }) => (
-        <View style={styles.card}>
+        ListEmptyComponent={
+          <Text style={styles.empty}>Ni zapisov v logu.</Text>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.card}>
             <Text style={styles.title}>{label(item)}</Text>
             <Text style={styles.date}>
-            {new Date(item.createdAt).toLocaleString()}
+              {item.createdAt
+                ? new Date(item.createdAt).toLocaleString()
+                : '—'}
             </Text>
 
             {canUndo(item) && (
-            <TouchableOpacity
+              <TouchableOpacity
                 style={styles.undoButton}
                 onPress={() => confirmUndo(item)}
-            >
+              >
                 <Text style={styles.undoText}>UNDO</Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
             )}
-        </View>
-       )}
+          </View>
+        )}
       />
     </View>
   );
@@ -97,6 +109,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  empty: {
+    textAlign: 'center',
+    marginTop: 40,
+    color: '#666',
   },
   card: {
     padding: 12,

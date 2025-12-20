@@ -2,44 +2,22 @@ import { Tabs } from 'expo-router';
 
 export default function GroupLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#1565c0',
-      }}
-    >
-      {/* DOMOV */}
+    <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen
         name="index"
-        options={{
-          title: 'Domov',
-          tabBarLabel: 'Domov',
-        }}
+        options={{ title: 'Domov' }}
       />
-
-      {/* LOG */}
       <Tabs.Screen
         name="log"
-        options={{
-          title: 'Log',
-          tabBarLabel: 'Log',
-        }}
+        options={{ title: 'Log' }}
       />
-
-      {/* PROFIL */}
       <Tabs.Screen
         name="profile"
-        options={{
-          title: 'Profil',
-          tabBarLabel: 'Profil',
-        }}
+        options={{ title: 'Profil' }}
       />
 
-      {/* 🔴 VSE OSTALO SKRIJ */}
-      <Tabs.Screen
-        name="category"
-        options={{ href: null }}
-      />
+      {/* skrij vse ostalo */}
+      <Tabs.Screen name="category" options={{ href: null }} />
     </Tabs>
   );
 }

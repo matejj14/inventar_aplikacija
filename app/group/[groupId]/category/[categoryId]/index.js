@@ -27,7 +27,7 @@ export default function CategoryModels() {
   useFocusEffect(
     useCallback(() => {
         loadModels();
-    }, [])
+    }, [categoryId])
   );
 
   async function loadModels() {
