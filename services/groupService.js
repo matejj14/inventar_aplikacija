@@ -1,4 +1,3 @@
-// services/groupService.js
 import {
   collection,
   addDoc,
@@ -13,8 +12,6 @@ import {
 import { db } from '../firebaseConfig';
 import * as Crypto from 'expo-crypto'; // za hash gesla
 
-// npm install expo-crypto
-// (Expo projekt to podpira out-of-the-box)
 
 async function hashPassword(password) {
   return await Crypto.digestStringAsync(
@@ -74,4 +71,17 @@ export async function joinGroup(groupId, password, user) {
   await updateDoc(groupRef, {
     members: arrayUnion(user.uid),
   });
+}
+
+
+export async function getUserGroups(userId) {
+  const ref = collection(db, 'groups');
+  const snap = await getDocs(ref);
+
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(group =>
+      Array.isArray(group.members) &&
+      group.members.includes(userId)
+    );
 }

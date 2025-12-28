@@ -14,22 +14,36 @@ import { undoLog } from '../../../../services/undoService';
 
 export default function LogScreen() {
   const params = useGlobalSearchParams();
-  const groupId = Array.isArray(params.groupId)
-    ? params.groupId[0]
-    : params.groupId;
+
+  // 🔑 EDINI pravilen vir resnice
+  const groupId = params.groupId
+    ? String(Array.isArray(params.groupId) ? params.groupId[0] : params.groupId)
+    : null;
 
   const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async () => {
+  const loadLogs = useCallback(async () => {
     if (!groupId) return;
-    const data = await getLogs(groupId);
-    setLogs(data);
+
+    setLoading(true);
+    try {
+      const data = await getLogs(groupId);
+      setLogs(data || []);
+    } catch (e) {
+      console.error('Napaka pri nalaganju logov:', e);
+    } finally {
+      setLoading(false);
+    }
   }, [groupId]);
 
+  // ⬇️ vedno znova, ko:
+  // - se zamenja skupina
+  // - se vrneš na tab Log
   useFocusEffect(
     useCallback(() => {
-      load();
-    }, [load])
+      loadLogs();
+    }, [loadLogs])
   );
 
   function label(log) {
@@ -37,7 +51,7 @@ export default function LogScreen() {
       case 'ADD_MACHINE':
         return `Dodano: ${log.machineLabel}`;
       case 'RESERVED':
-        return `Ara: ${log.machineLabel} (${log.meta?.customerName || '—'})`;
+        return `Ara: ${log.machineLabel} (${log.meta?.customerName})`;
       case 'SOLD':
         return `Prodano: ${log.machineLabel}`;
       case 'RETURNED':
@@ -66,7 +80,7 @@ export default function LogScreen() {
           style: 'destructive',
           onPress: async () => {
             await undoLog(groupId, log);
-            load();
+            loadLogs();
           },
         },
       ]
@@ -77,17 +91,19 @@ export default function LogScreen() {
     <View style={styles.container}>
       <FlatList
         data={logs}
-        keyExtractor={(i) => i.id}
+        keyExtractor={(item) => item.id}
+        refreshing={loading}
+        onRefresh={loadLogs}
         ListEmptyComponent={
-          <Text style={styles.empty}>Ni zapisov v logu.</Text>
+          <Text style={styles.empty}>
+            {loading ? 'Nalagam…' : 'Ni logov za to skupino.'}
+          </Text>
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.title}>{label(item)}</Text>
             <Text style={styles.date}>
-              {item.createdAt
-                ? new Date(item.createdAt).toLocaleString()
-                : '—'}
+              {new Date(item.createdAt).toLocaleString()}
             </Text>
 
             {canUndo(item) && (
@@ -110,15 +126,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  empty: {
-    textAlign: 'center',
-    marginTop: 40,
-    color: '#666',
-  },
   card: {
     padding: 12,
     borderBottomWidth: 1,
     borderColor: '#ddd',
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '500',
   },
   date: {
     fontSize: 12,
@@ -136,8 +151,9 @@ const styles = StyleSheet.create({
     color: '#1565c0',
     fontWeight: '600',
   },
-  title: {
-    fontSize: 15,
-    fontWeight: '500',
+  empty: {
+    textAlign: 'center',
+    marginTop: 40,
+    color: '#777',
   },
 });
