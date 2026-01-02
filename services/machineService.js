@@ -1,6 +1,6 @@
 //za stroje znotraj modelov
 import { db } from '../firebaseConfig';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { doc, updateDoc } from 'firebase/firestore';
 
 export async function addMachine(groupId, categoryId, modelId, data) {
@@ -38,4 +38,18 @@ export async function updateMachineStatus(
   );
 
   await updateDoc(ref, data);
+}
+
+export async function deleteMachine(
+  groupId,
+  categoryId,
+  modelId,
+  machineId
+) {
+  const ref = doc(
+    db,
+    `groups/${groupId}/categories/${categoryId}/models/${modelId}/machines/${machineId}`
+  );
+
+  await deleteDoc(ref);
 }

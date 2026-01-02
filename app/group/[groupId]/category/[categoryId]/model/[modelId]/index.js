@@ -11,7 +11,7 @@ import {
   Switch,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { addMachine, getMachines, updateMachineStatus } from '../../../../../../../services/machineService';
+import { addMachine, getMachines, updateMachineStatus, deleteMachine } from '../../../../../../../services/machineService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../../../../../firebaseConfig';
 
@@ -20,6 +20,35 @@ import { recalcCategoryStats } from '../../../../../../../services/categoryServi
 
 import { addLog } from '../../../../../../../services/logService';
 import { getLocalUser } from '../../../../../../../services/userService';
+
+
+
+function Notes({ text }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!text) return null;
+
+  const isShort = text.length <= 120;
+
+  return (
+    <View style={{ marginTop: 4 }}>
+      <Text numberOfLines={expanded || isShort ? undefined : 2}>
+        {text}
+      </Text>
+
+      {!isShort && (
+        <TouchableOpacity onPress={() => setExpanded(!expanded)}>
+          <Text style={{ color: '#1565c0', marginTop: 2 }}>
+            {expanded ? 'Pokaži manj' : 'Pokaži več'}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+
+
 
 export default function ModelMachines() {
   const params = useLocalSearchParams();
@@ -46,6 +75,13 @@ export default function ModelMachines() {
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+
+  const [editModal, setEditModal] = useState(false);
+  const [editMachine, setEditMachine] = useState(null);
+
+  const [editSerial, setEditSerial] = useState('');
+  const [editYear, setEditYear] = useState('');
+  const [editNotes, setEditNotes] = useState('');
 
   const visibleMachines = machines.filter(
     m => m.status !== 'sold'
@@ -114,6 +150,14 @@ export default function ModelMachines() {
     setNotes('');
     setModalVisible(false);
     load();
+  }
+
+  function openEditMachine(machine) {
+    setEditMachine(machine);
+    setEditSerial(machine.serialNumber || '');
+    setEditYear(machine.year || '');
+    setEditNotes(machine.notes || '');
+    setEditModal(true);
   }
 
  function statusLabel(status) {
@@ -193,6 +237,33 @@ export default function ModelMachines() {
                     load();
                 },
             },
+            {
+              text: 'Izbriši stroj',
+              style: 'destructive',
+              onPress: async () => {
+                if (machine.status === 'sold') {
+                  Alert.alert('Ni dovoljeno', 'Prodanega stroja ni mogoče izbrisati.');
+                  return;
+                }
+
+                await deleteMachine(groupId, categoryId, modelId, machine.id);
+
+                await addLog(groupId, {
+                  type: 'DELETE_MACHINE',
+                  machineId: machine.id,
+                  machineLabel: machine.serialNumber || 'Brez serijske',
+                  categoryId,
+                  modelId,
+                  userId: user.uid,
+                  username: user.username,
+                });
+
+                await recalcModelStats(groupId, categoryId, modelId);
+                await recalcCategoryStats(groupId, categoryId);
+
+                load();
+              },
+            },
             { text: 'Prekliči', style: 'cancel' },
             ]
         );
@@ -206,57 +277,80 @@ export default function ModelMachines() {
         setReserveModal(true);
     }
 
+    function openMachineMenu(machine) {
+      Alert.alert(
+        'Možnosti',
+        'Izberi dejanje',
+        [
+          {
+            text: 'Uredi',
+            onPress: () => openEditMachine(machine),
+          },
+          {
+            text: 'Spremeni status',
+            onPress: () => openStatusMenu(machine),
+          },
+          {
+            text: 'Prekliči',
+            style: 'cancel',
+          },
+        ]
+      );
+    }
+
 
   return (
     <View style={styles.container}>
        <FlatList
-            data={visibleMachines}
-            keyExtractor={(i) => i.id}
-            renderItem={({ item }) => (
+           data={visibleMachines}
+           keyExtractor={(i) => i.id}
+           renderItem={({ item }) => (
             <View style={styles.card}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={styles.title}>
-                {item.serialNumber || 'Brez serijske'}
+                  {item.serialNumber || 'Brez serijske'}
                 </Text>
 
-                <Text>Letnik: {item.year}</Text>
+                <TouchableOpacity onPress={() => openMachineMenu(item)}>
+                  <Text style={{ fontSize: 18 }}>⋮</Text>
+                </TouchableOpacity>
+              </View>
 
-                {item.notes ? <Text>Opombe: {item.notes}</Text> : null}
+              <Text>Letnik: {item.year}</Text>
 
-                <Text>Status: {statusLabel(item.status)}</Text>
+              <Notes text={item.notes} />
 
-                {hasAssembly && (
+              <Text>Status: {statusLabel(item.status)}</Text>
+
+              {hasAssembly && (
                 <Text>
-                    {item.assembled ? 'Sestavljen' : 'Razstavljen'}
+                  {item.assembled ? 'Sestavljen' : 'Razstavljen'}
                 </Text>
-                )}
+              )}
 
-                {item.status === 'reserved' && (
+              {item.status === 'reserved' && (
                 <>
-                    <Text>Kupec: {item.customerName}</Text>
-                    <Text>
+                  <Text>Kupec: {item.customerName}</Text>
+                  <Text>
                     Datum are:{' '}
                     {item.reservedAt
-                        ? new Date(item.reservedAt).toLocaleDateString()
-                        : '—'}
-                    </Text>
+                      ? new Date(item.reservedAt).toLocaleDateString()
+                      : '—'}
+                  </Text>
                 </>
-                )}
-
-                <TouchableOpacity
-                style={styles.statusButton}
-                onPress={() => openStatusMenu(item)}
-                >
-                <Text style={styles.statusButtonText}>
-                    Spremeni status
-                </Text>
-                </TouchableOpacity>
+              )}
             </View>
-            )}
+          )}
+
         />
 
-      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setModalVisible(true)}
+      >
         <Text style={styles.fabText}>＋</Text>
       </TouchableOpacity>
+      
 
       {/* MODAL */}
       <Modal visible={modalVisible} transparent animationType="slide">
@@ -375,6 +469,75 @@ export default function ModelMachines() {
             </View>
         </View>
         </Modal>
+
+        <Modal visible={editModal} transparent animationType="slide">
+          <View style={styles.overlay}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Uredi stroj</Text>
+
+              <TextInput
+                value={editSerial}
+                onChangeText={setEditSerial}
+                placeholder="Serijska številka"
+                style={styles.input}
+              />
+
+              <TextInput
+                value={editYear}
+                onChangeText={setEditYear}
+                placeholder="Letnik"
+                keyboardType="numeric"
+                style={styles.input}
+              />
+
+              <TextInput
+                value={editNotes}
+                onChangeText={setEditNotes}
+                placeholder="Opombe"
+                multiline
+                style={[styles.input, { minHeight: 80 }]}
+              />
+
+              <View style={styles.row}>
+                <TouchableOpacity onPress={() => setEditModal(false)}>
+                  <Text>Prekliči</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={async () => {
+                    await updateMachineStatus(
+                      groupId,
+                      categoryId,
+                      modelId,
+                      editMachine.id,
+                      {
+                        serialNumber: editSerial || null,
+                        year: editYear,
+                        notes: editNotes,
+                      }
+                    );
+
+                    await addLog(groupId, {
+                      type: 'EDIT_MACHINE',
+                      machineId: editMachine.id,
+                      machineLabel: editSerial || editMachine.serialNumber || 'Brez serijske',
+                      categoryId,
+                      modelId,
+                      userId: user.uid,
+                      username: user.username,
+                    });
+
+                    setEditModal(false);
+                    load();
+                  }}
+                >
+                  <Text style={{ fontWeight: 'bold' }}>Shrani</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
     </View>
   );
 }
