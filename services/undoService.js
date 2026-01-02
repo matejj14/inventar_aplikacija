@@ -4,8 +4,19 @@ import { addLog } from './logService';
 import { recalcModelStats } from './modelService';
 import { recalcCategoryStats } from './categoryService';
 
-export async function undoLog(groupId, log) {
-  const { machineId, categoryId, modelId, type } = log;
+export async function undoLog(groupId, log, reason = null, user) {
+  const {
+    machineId,
+    categoryId,
+    modelId,
+    modelName,
+    machineLabel,
+    type,
+  } = log;
+
+  // označimo originalni log kot razveljavljen
+  const logRef = doc(db, `groups/${groupId}/logs/${log.id}`);
+  await updateDoc(logRef, { undone: true });
 
   const machineRef = doc(
     db,
@@ -15,6 +26,9 @@ export async function undoLog(groupId, log) {
   if (type === 'SOLD') {
     await updateDoc(machineRef, {
       status: 'stock',
+      customerName: null,
+      customerPhone: null,
+      soldAt: null,
     });
 
     await addLog(groupId, {
@@ -22,8 +36,14 @@ export async function undoLog(groupId, log) {
       machineId,
       categoryId,
       modelId,
+      modelName,
+      machineLabel,
+      reason, // lahko null
+      userId: user.uid,
+      username: user.username,
     });
   }
+
 
   if (type === 'RESERVED') {
     await updateDoc(machineRef, {
@@ -38,6 +58,11 @@ export async function undoLog(groupId, log) {
       machineId,
       categoryId,
       modelId,
+      modelName,
+      machineLabel,
+      reason,
+      userId: user.uid,
+      username: user.username,
     });
   }
 

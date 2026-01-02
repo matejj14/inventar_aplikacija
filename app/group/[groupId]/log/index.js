@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useGlobalSearchParams, useFocusEffect } from 'expo-router';
 
 import { getLogs } from '../../../../services/logService';
 import { undoLog } from '../../../../services/undoService';
+import { getLocalUser } from '../../../../services/userService';
 
 export default function LogScreen() {
   const params = useGlobalSearchParams();
@@ -22,6 +25,21 @@ export default function LogScreen() {
 
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [undoLoading, setUndoLoading] = useState(false);
+
+  const [undoModal, setUndoModal] = useState(false);
+  const [undoReason, setUndoReason] = useState('');
+  const [selectedLog, setSelectedLog] = useState(null);
+
+  const [user, setUser] = useState(null);
+  
+  const [sections, setSections] = useState([]);
+
+
+  useEffect(() => {
+    getLocalUser().then(setUser);
+  }, []);
+
 
   const loadLogs = useCallback(async () => {
     if (!groupId) return;
@@ -29,6 +47,9 @@ export default function LogScreen() {
     setLoading(true);
     try {
       const data = await getLogs(groupId);
+      const grouped = groupLogsByDate(data || []);
+      setSections(grouped);
+      
       setLogs(data || []);
     } catch (e) {
       console.error('Napaka pri nalaganju logov:', e);
@@ -37,7 +58,7 @@ export default function LogScreen() {
     }
   }, [groupId]);
 
-  // ⬇️ vedno znova, ko:
+  // vedno znova, ko:
   // - se zamenja skupina
   // - se vrneš na tab Log
   useFocusEffect(
@@ -49,17 +70,17 @@ export default function LogScreen() {
   function label(log) {
     switch (log.type) {
       case 'ADD_MACHINE':
-        return `Dodano: ${log.machineLabel}`;
+        return `DODAN ${log.modelName ?? 'Model'} – ${log.machineLabel}`;
       case 'RESERVED':
-        return `Ara: ${log.machineLabel} (${log.meta?.customerName})`;
+        return `ARA: ${log.meta?.customerName} - ${log.modelName ?? 'Model'} – ${log.machineLabel}`;
       case 'SOLD':
-        return `Prodano: ${log.machineLabel}`;
+        return `PRODANO - ${log.modelName ?? 'Model'} – ${log.machineLabel}`;
       case 'RETURNED':
         return `Vrnjeno na zalogo: ${log.machineLabel}`;
       case 'UNDO_SOLD':
-        return `Razveljavljena prodaja`;
+        return `NAZAJ NA ZALOGI - ${log.modelName ?? 'Model'} – ${log.machineLabel} ${log.reason ? ` (${log.reason})` : ''}`;
       case 'UNDO_RESERVED':
-        return `Razveljavljena ara`;
+        return `RAZVELJAVLJENA ARA - ${log.modelName ?? 'Model'} - ${log.machineLabel} ${log.reason ? ` (${log.reason})` : ''}`;
       default:
         return log.type;
     }
@@ -69,56 +90,134 @@ export default function LogScreen() {
     return log.type === 'SOLD' || log.type === 'RESERVED';
   }
 
+
   function confirmUndo(log) {
-    Alert.alert(
-      'Razveljavi spremembo',
-      'Ali res želiš razveljaviti to dejanje?',
-      [
-        { text: 'Prekliči', style: 'cancel' },
-        {
-          text: 'UNDO',
-          style: 'destructive',
-          onPress: async () => {
-            await undoLog(groupId, log);
-            loadLogs();
-          },
-        },
-      ]
-    );
-  }
+    setSelectedLog(log);
+    setUndoReason('');
+    setUndoModal(true);
+  } 
 
-  return (
-    <View style={styles.container}>
-      <FlatList
-        data={logs}
-        keyExtractor={(item) => item.id}
-        refreshing={loading}
-        onRefresh={loadLogs}
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            {loading ? 'Nalagam…' : 'Ni logov za to skupino.'}
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.title}>{label(item)}</Text>
-            <Text style={styles.date}>
-              {new Date(item.createdAt).toLocaleString()}
+function groupLogsByDate(logs) {
+  const map = {};
+
+  logs.forEach(log => {
+    const dateKey = new Date(log.createdAt).toLocaleDateString('sl-SI');
+
+    if (!map[dateKey]) {
+      map[dateKey] = [];
+    }
+    map[dateKey].push(log);
+  });
+
+  return Object.keys(map).map(date => ({
+    date,
+    data: map[date],
+  }));
+}
+
+return (
+    <>
+      <View style={styles.container}>
+        <FlatList
+          data={sections}
+          keyExtractor={(item) => item.date}
+          refreshing={loading}
+          onRefresh={loadLogs}
+          ListEmptyComponent={
+            <Text style={styles.empty}>
+              {loading ? 'Nalagam…' : 'Ni logov za to skupino.'}
             </Text>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.sectionWrapper}>
+              {/* ===== DATUM ===== */}
+              <View style={styles.dateHeader}>
+                <Text style={styles.dateHeaderText}>{item.date}</Text>
+              </View>
 
-            {canUndo(item) && (
-              <TouchableOpacity
-                style={styles.undoButton}
-                onPress={() => confirmUndo(item)}
-              >
-                <Text style={styles.undoText}>UNDO</Text>
+              {/* ===== LOGI ZA TA DATUM ===== */}
+              {item.data.map(log => (
+                <View key={log.id} style={styles.card}>
+                  <Text style={styles.title}>{label(log)}</Text>
+
+                  <Text style={styles.meta}>
+                    {new Date(log.createdAt).toLocaleTimeString('sl-SI', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    {log.username ? ` · ${log.username}` : ''}
+                  </Text>
+
+                  {canUndo(log) && (
+                    <TouchableOpacity
+                      style={styles.undoButton}
+                      onPress={() => confirmUndo(log)}
+                    >
+                      <Text style={styles.undoText}>UNDO</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+        />
+      </View>
+
+      {/* ===== UNDO MODAL ===== */}
+      <Modal visible={undoModal} transparent animationType="slide">
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Razlog za vrnitev</Text>
+
+            <TextInput
+              value={undoReason}
+              onChangeText={setUndoReason}
+              placeholder="Npr. preklic nakupa"
+              style={styles.input}
+              multiline
+            />
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity onPress={() => setUndoModal(false)}>
+                <Text>Prekliči</Text>
               </TouchableOpacity>
-            )}
+
+              <TouchableOpacity
+                disabled={undoLoading}
+                onPress={async () => {
+                  if (undoLoading) return; // ⬅️ TUKAJ
+
+                  setUndoLoading(true);
+
+                  try {
+                    await undoLog(
+                      groupId,
+                      selectedLog,
+                      undoReason?.trim() || null,
+                      user
+                    );
+
+                    setUndoModal(false);
+                    setUndoReason('');
+                    setSelectedLog(null);
+
+                    loadLogs();
+                  } finally {
+                    setUndoLoading(false);
+                  }
+                }}
+              >
+                <Text style={{ fontWeight: 'bold' }}>
+                  {undoLoading ? 'Shranjujem…' : 'Potrdi'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
-      />
-    </View>
+        </View>
+      </Modal>
+    </>
   );
+
 }
 
 const styles = StyleSheet.create({
@@ -135,10 +234,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  date: {
+  meta: {
     fontSize: 12,
     color: '#666',
+    marginTop: 2,
   },
+  sectionWrapper: {
+    marginBottom: 16,
+  },
+  dateHeader: {
+    borderTopWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: '#bbb',
+    paddingVertical: 6,
+    marginBottom: 6,
+    backgroundColor: '#f5f5f5',
+  },
+  dateHeaderText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#444',
+  },
+
   undoButton: {
     marginTop: 8,
     alignSelf: 'flex-start',
@@ -155,5 +272,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
     color: '#777',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    minHeight: 80,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  dateHeader: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderBottomWidth: 2,
+    borderColor: '#bbb',
+    marginTop: 16,
+  },
+
+  dateHeaderText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
   },
 });

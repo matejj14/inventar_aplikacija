@@ -16,5 +16,8 @@ export async function getLogs(groupId) {
   );
 
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(log => !log.undone);
 }

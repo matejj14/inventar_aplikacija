@@ -19,9 +19,17 @@ import { recalcModelStats } from '../../../../../../../services/modelService';
 import { recalcCategoryStats } from '../../../../../../../services/categoryService';
 
 import { addLog } from '../../../../../../../services/logService';
+import { getLocalUser } from '../../../../../../../services/userService';
 
 export default function ModelMachines() {
-  const { groupId, categoryId, modelId } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const groupId = Array.isArray(params.groupId) ? params.groupId[0] : params.groupId;
+  const categoryId = Array.isArray(params.categoryId) ? params.categoryId[0] : params.categoryId;
+  const modelId = Array.isArray(params.modelId) ? params.modelId[0] : params.modelId;
+
+  const [user, setUser] = useState(null);
+
+  const [modelName, setModelName] = useState(null);
 
   const [machines, setMachines] = useState([]);
   const [hasAssembly, setHasAssembly] = useState(false);
@@ -39,22 +47,45 @@ export default function ModelMachines() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
 
+  const visibleMachines = machines.filter(
+    m => m.status !== 'sold'
+  );  
+
   useEffect(() => {
+    if (!groupId || !categoryId || !modelId) return;
     load();
   }, [groupId, categoryId, modelId]);
 
   async function load() {
-    const catRef = doc(db, `groups/${groupId}/categories/${categoryId}`);
-    const catSnap = await getDoc(catRef);
+    try {
+      const u = await getLocalUser();
+      setUser(u);
 
-    if (catSnap.exists()) {
-      const canAssemble = catSnap.data().hasAssembly;
-      setHasAssembly(canAssemble);
-      setAssembled(!canAssemble); // če so razstavljeni → false
+      const catRef = doc(db, `groups/${groupId}/categories/${categoryId}`);
+      const catSnap = await getDoc(catRef);
+
+      if (catSnap.exists()) {
+        const canAssemble = catSnap.data().hasAssembly;
+        setHasAssembly(canAssemble);
+        setAssembled(!canAssemble);
+      }
+
+      const modelRef = doc(
+        db,
+        `groups/${groupId}/categories/${categoryId}/models/${modelId}`
+      );
+
+      const modelSnap = await getDoc(modelRef);
+      if (modelSnap.exists()) {
+        setModelName(modelSnap.data().name);
+      }
+
+      const data = await getMachines(groupId, categoryId, modelId);
+      setMachines(data);
+    } catch (e) {
+      console.error('NAPAKA PRI LOAD:', e);
+      Alert.alert('Napaka', 'Pri nalaganju strojev je prišlo do napake.');
     }
-
-    const data = await getMachines(groupId, categoryId, modelId);
-    setMachines(data);
   }
 
  async function handleAdd() {
@@ -68,12 +99,14 @@ export default function ModelMachines() {
     await recalcModelStats(groupId, categoryId, modelId);
     await recalcCategoryStats(groupId, categoryId);
 
-    // 🔴 TEST LOG (zelo pomembno)
     await addLog(groupId, {
         type: 'ADD_MACHINE',
         machineLabel: serial || 'Brez serijske',
         categoryId,
         modelId,
+        modelName,
+        username: user?.username,
+        userId: user?.uid,
     });
 
     setSerial('');
@@ -120,6 +153,9 @@ export default function ModelMachines() {
                     machineLabel: machine.serialNumber || 'Brez serijske',
                     categoryId,
                     modelId,
+                    modelName,
+                    username: user?.username,
+                    userId: user?.uid,
                     });
 
                     load();
@@ -149,6 +185,9 @@ export default function ModelMachines() {
                     machineLabel: machine.serialNumber || 'Brez serijske',
                     categoryId,
                     modelId,
+                    modelName,
+                    username: user?.username,
+                    userId: user?.uid,
                     });
 
                     load();
@@ -160,44 +199,6 @@ export default function ModelMachines() {
     }
 
 
-   async function updateStatus(machineId, newStatus) {
-    await updateMachineStatus(
-        groupId,
-        categoryId,
-        modelId,
-        machineId,
-        { status: newStatus }
-    );
-
-    await addLog(groupId, {
-        type: 'RESERVED',
-        machineId: selectedMachine.id,
-        machineLabel: selectedMachine.serialNumber || 'Brez serijske',
-        categoryId,
-        modelId,
-        meta: {
-            customerName,
-        },
-    });
-
-    await addLog(groupId, {
-        type: 'SOLD',
-        machineId: machine.id,
-        machineLabel: machine.serialNumber || 'Brez serijske',
-        categoryId,
-        modelId,
-    });
-
-    await addLog(groupId, {
-        type: 'RETURNED',
-        machineId: machine.id,
-        machineLabel: machine.serialNumber || 'Brez serijske',
-        categoryId,
-        modelId,
-    });
-    load();
-    }
-
     function openReserveModal(machine) {
         setSelectedMachine(machine);
         setCustomerName('');
@@ -206,11 +207,10 @@ export default function ModelMachines() {
     }
 
 
-
   return (
     <View style={styles.container}>
        <FlatList
-            data={machines}
+            data={visibleMachines}
             keyExtractor={(i) => i.id}
             renderItem={({ item }) => (
             <View style={styles.card}>
@@ -352,14 +352,17 @@ export default function ModelMachines() {
                     await recalcCategoryStats(groupId, categoryId);
 
                     await addLog(groupId, {
-                        type: 'RESERVED',
-                        machineId: selectedMachine.id,
-                        machineLabel: selectedMachine.serialNumber || 'Brez serijske',
-                        categoryId,
-                        modelId,
-                        meta: {
-                            customerName,
-                        },
+                      type: 'RESERVED',
+                      machineId: selectedMachine.id,
+                      machineLabel: selectedMachine.serialNumber || 'Brez serijske',
+                      categoryId,
+                      modelId,
+                      modelName,
+                      meta: {
+                          customerName,
+                      },
+                      username: user?.username,
+                      userId: user?.uid,
                     });
 
                     setReserveModal(false);
