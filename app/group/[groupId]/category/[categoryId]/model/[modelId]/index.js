@@ -160,12 +160,53 @@ export default function ModelMachines() {
     setEditModal(true);
   }
 
+  function confirmDeleteMachine(machine) {
+    Alert.alert(
+      'Izbriši stroj',
+      `Ali res želiš izbrisati stroj:\n${machine.serialNumber || 'Brez serijske'}?\n\nTega dejanja ni mogoče razveljaviti.`,
+      [
+        { text: 'Prekliči', style: 'cancel' },
+        {
+          text: 'Izbriši',
+          style: 'destructive',
+          onPress: async () => {
+            if (machine.status === 'sold') {
+              Alert.alert(
+                'Ni dovoljeno',
+                'Prodanega stroja ni mogoče izbrisati.'
+              );
+              return;
+            }
+
+            await deleteMachine(groupId, categoryId, modelId, machine.id);
+
+            await addLog(groupId, {
+              type: 'DELETE_MACHINE',
+              machineId: machine.id,
+              machineLabel: machine.serialNumber || 'Brez serijske',
+              categoryId,
+              modelId,
+              modelName,
+              userId: user.uid,
+              username: user.username,
+            });
+
+            await recalcModelStats(groupId, categoryId, modelId);
+            await recalcCategoryStats(groupId, categoryId);
+
+            load();
+          },
+        },
+      ]
+    );
+  }
+
  function statusLabel(status) {
     if (status === 'stock') return 'Na zalogi';
     if (status === 'reserved') return 'Plačana ara';
     if (status === 'sold') return 'Prodano';
     return status;
-    }
+  }
 
   function openStatusMenu(machine) {
       Alert.alert(
@@ -242,34 +283,6 @@ export default function ModelMachines() {
                   load();
               },
           },
-          {
-            text: 'Izbriši stroj',
-            style: 'destructive',
-            onPress: async () => {
-              if (machine.status === 'sold') {
-                Alert.alert('Ni dovoljeno', 'Prodanega stroja ni mogoče izbrisati.');
-                return;
-              }
-
-              await deleteMachine(groupId, categoryId, modelId, machine.id);
-
-              await addLog(groupId, {
-                type: 'DELETE_MACHINE',
-                machineId: machine.id,
-                machineLabel: machine.serialNumber || 'Brez serijske',
-                categoryId,
-                modelId,
-                modelName,
-                userId: user.uid,
-                username: user.username,
-              });
-
-              await recalcModelStats(groupId, categoryId, modelId);
-              await recalcCategoryStats(groupId, categoryId);
-
-              load();
-            },
-          },
           { text: 'Prekliči', style: 'cancel' },
           ]
       );
@@ -300,6 +313,7 @@ export default function ModelMachines() {
           text: 'Izbriši stroj',
           style: 'destructive',
           onPress: async () => {
+            confirmDeleteMachine(machine);
             if (machine.status === 'sold') {
               Alert.alert(
                 'Ni dovoljeno',
