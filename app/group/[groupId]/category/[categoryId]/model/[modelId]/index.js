@@ -167,136 +167,174 @@ export default function ModelMachines() {
     return status;
     }
 
-    function openStatusMenu(machine) {
-        Alert.alert(
-            'Spremeni status',
-            'Izberi novo stanje',
-            [
-            {
-                text: 'Na zalogi',
-                onPress: async () => {
-                    await updateMachineStatus(
-                    groupId,
-                    categoryId,
-                    modelId,
-                    machine.id,
-                    {
-                        status: 'stock',
-                        customerName: null,
-                        customerPhone: null,
-                        reservedAt: null,
-                    }
-                    );
-
-                    await recalcModelStats(groupId, categoryId, modelId);
-                    await recalcCategoryStats(groupId, categoryId);
-
-                    await addLog(groupId, {
-                    type: 'RETURNED',
-                    machineId: machine.id,
-                    machineLabel: machine.serialNumber || 'Brez serijske',
-                    categoryId,
-                    modelId,
-                    modelName,
-                    username: user?.username,
-                    userId: user?.uid,
-                    });
-
-                    load();
-                },
-            },
-            {
-                text: 'Plačana ara',
-                onPress: () => openReserveModal(machine),
-            },
-            {
-                text: 'Prodano',
-                onPress: async () => {
-                    await updateMachineStatus(
-                    groupId,
-                    categoryId,
-                    modelId,
-                    machine.id,
-                    { status: 'sold' }
-                    );
-
-                    await recalcModelStats(groupId, categoryId, modelId);
-                    await recalcCategoryStats(groupId, categoryId);
-
-                    await addLog(groupId, {
-                    type: 'SOLD',
-                    machineId: machine.id,
-                    machineLabel: machine.serialNumber || 'Brez serijske',
-                    categoryId,
-                    modelId,
-                    modelName,
-                    username: user?.username,
-                    userId: user?.uid,
-                    });
-
-                    load();
-                },
-            },
-            {
-              text: 'Izbriši stroj',
-              style: 'destructive',
+  function openStatusMenu(machine) {
+      Alert.alert(
+          'Spremeni status',
+          'Izberi novo stanje',
+          [
+          {
+              text: 'Na zalogi',
               onPress: async () => {
-                if (machine.status === 'sold') {
-                  Alert.alert('Ni dovoljeno', 'Prodanega stroja ni mogoče izbrisati.');
-                  return;
-                }
+                  //Če je že na zalogi se ne zgodi nič
+                  if (machine.status === 'stock') {
+                    return;
+                  }
 
-                await deleteMachine(groupId, categoryId, modelId, machine.id);
+                  await updateMachineStatus(
+                  groupId,
+                  categoryId,
+                  modelId,
+                  machine.id,
+                  {
+                      status: 'stock',
+                      customerName: null,
+                      customerPhone: null,
+                      reservedAt: null,
+                  }
+                  );
 
-                await addLog(groupId, {
-                  type: 'DELETE_MACHINE',
+                  await recalcModelStats(groupId, categoryId, modelId);
+                  await recalcCategoryStats(groupId, categoryId);
+
+                  await addLog(groupId, {
+                  type: 'RETURNED',
                   machineId: machine.id,
                   machineLabel: machine.serialNumber || 'Brez serijske',
                   categoryId,
                   modelId,
-                  userId: user.uid,
-                  username: user.username,
-                });
+                  modelName,
+                  username: user?.username,
+                  userId: user?.uid,
+                  });
 
-                await recalcModelStats(groupId, categoryId, modelId);
-                await recalcCategoryStats(groupId, categoryId);
-
-                load();
+                  load();
               },
+          },
+          {
+              text: 'Plačana ara',
+              onPress: () => openReserveModal(machine),
+          },
+          {
+              text: 'Prodano',
+              onPress: async () => {
+                  await updateMachineStatus(
+                  groupId,
+                  categoryId,
+                  modelId,
+                  machine.id,
+                  { status: 'sold' }
+                  );
+
+                  await recalcModelStats(groupId, categoryId, modelId);
+                  await recalcCategoryStats(groupId, categoryId);
+
+                  await addLog(groupId, {
+                  type: 'SOLD',
+                  machineId: machine.id,
+                  machineLabel: machine.serialNumber || 'Brez serijske',
+                  categoryId,
+                  modelId,
+                  modelName,
+                  username: user?.username,
+                  userId: user?.uid,
+                  });
+
+                  load();
+              },
+          },
+          {
+            text: 'Izbriši stroj',
+            style: 'destructive',
+            onPress: async () => {
+              if (machine.status === 'sold') {
+                Alert.alert('Ni dovoljeno', 'Prodanega stroja ni mogoče izbrisati.');
+                return;
+              }
+
+              await deleteMachine(groupId, categoryId, modelId, machine.id);
+
+              await addLog(groupId, {
+                type: 'DELETE_MACHINE',
+                machineId: machine.id,
+                machineLabel: machine.serialNumber || 'Brez serijske',
+                categoryId,
+                modelId,
+                modelName,
+                userId: user.uid,
+                username: user.username,
+              });
+
+              await recalcModelStats(groupId, categoryId, modelId);
+              await recalcCategoryStats(groupId, categoryId);
+
+              load();
             },
-            { text: 'Prekliči', style: 'cancel' },
-            ]
-        );
-    }
-
-
-    function openReserveModal(machine) {
-        setSelectedMachine(machine);
-        setCustomerName('');
-        setCustomerPhone('');
-        setReserveModal(true);
-    }
-
-    function openMachineMenu(machine) {
-      Alert.alert(
-        'Možnosti',
-        'Izberi dejanje',
-        [
-          {
-            text: 'Uredi',
-            onPress: () => openEditMachine(machine),
           },
-          {
-            text: 'Spremeni status',
-            onPress: () => openStatusMenu(machine),
-          },
-          {
-            text: 'Prekliči',
-            style: 'cancel',
-          },
-        ]
+          { text: 'Prekliči', style: 'cancel' },
+          ]
       );
-    }
+  }
+
+
+  function openReserveModal(machine) {
+      setSelectedMachine(machine);
+      setCustomerName('');
+      setCustomerPhone('');
+      setReserveModal(true);
+  }
+
+  function openMachineMenu(machine) {
+    Alert.alert(
+      'Možnosti',
+      machine.serialNumber || 'Stroj',
+      [
+        {
+          text: 'Uredi',
+          onPress: () => openEditMachine(machine),
+        },
+        {
+          text: 'Spremeni status',
+          onPress: () => openStatusMenu(machine),
+        },
+        {
+          text: 'Izbriši stroj',
+          style: 'destructive',
+          onPress: async () => {
+            if (machine.status === 'sold') {
+              Alert.alert(
+                'Ni dovoljeno',
+                'Prodanega stroja ni mogoče izbrisati.'
+              );
+              return;
+            }
+
+            await deleteMachine(groupId, categoryId, modelId, machine.id);
+
+            await addLog(groupId, {
+              type: 'DELETE_MACHINE',
+              machineId: machine.id,
+              machineLabel: machine.serialNumber || 'Brez serijske',
+              categoryId,
+              modelId,
+              modelName,
+              userId: user.uid,
+              username: user.username,
+            });
+
+            await recalcModelStats(groupId, categoryId, modelId);
+            await recalcCategoryStats(groupId, categoryId);
+
+            load();
+          },
+        },
+        {
+          text: 'Prekliči',
+          style: 'cancel',
+        },
+      ]
+    );
+  }
+
 
 
   return (
@@ -305,14 +343,30 @@ export default function ModelMachines() {
            data={visibleMachines}
            keyExtractor={(i) => i.id}
            renderItem={({ item }) => (
-            <View style={styles.card}>
+           <View
+            key={item.id}
+            style={[
+              styles.card,
+              { borderLeftColor: item.status === 'reserved' ? '#f9a825' : '#2e7d32' },
+            ]}
+          >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={styles.title}>
+                <Text
+                  style={[
+                    styles.title,
+                    item.status === 'stock' && styles.stockText,
+                    item.status === 'reserved' && styles.reservedText,
+                  ]}
+                >
                   {item.serialNumber || 'Brez serijske'}
                 </Text>
 
-                <TouchableOpacity onPress={() => openMachineMenu(item)}>
-                  <Text style={{ fontSize: 18 }}>⋮</Text>
+                <TouchableOpacity
+                  onPress={() => openMachineMenu(item)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={styles.moreButton}
+                >
+                  <Text style={styles.moreText}>⋮</Text>
                 </TouchableOpacity>
               </View>
 
@@ -554,6 +608,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderLeftWidth: 4,
   },
   title: {
     fontSize: 16,
@@ -609,10 +664,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     borderRadius: 8,
     alignItems: 'center',
-    },
+  },
 
-    statusButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    },
+  statusButtonText: {
+  color: '#fff',
+  fontSize: 16,
+  },
+
+  moreButton: {  //3 pikice za urejanje
+    padding: 6,
+    borderRadius: 20,
+  },
+  moreText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  stockText: {
+    color: '#2e7d32', // zelena
+  },
+
+  reservedText: {
+    color: '#f9a825', // rumena
+  },
 });

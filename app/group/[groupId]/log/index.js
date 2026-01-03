@@ -81,6 +81,8 @@ export default function LogScreen() {
         return `NAZAJ NA ZALOGI - ${log.modelName ?? 'Model'} – ${log.machineLabel} ${log.reason ? ` (${log.reason})` : ''}`;
       case 'UNDO_RESERVED':
         return `RAZVELJAVLJENA ARA - ${log.modelName ?? 'Model'} - ${log.machineLabel} ${log.reason ? ` (${log.reason})` : ''}`;
+      case 'DELETE_MACHINE':
+        return `IZBRISAN - ${log.modelName} - ${log.machineLabel}`;  
       default:
         return log.type;
     }
@@ -137,7 +139,12 @@ return (
 
               {/* ===== LOGI ZA TA DATUM ===== */}
               {item.data.map(log => (
-                <View key={log.id} style={styles.card}>
+                <View
+                  style={[
+                    styles.card,
+                    log.type === 'DELETE_MACHINE' && { backgroundColor: '#ffebee' },
+                  ]}
+                >
                   <Text style={styles.title}>{label(log)}</Text>
 
                   <Text style={styles.meta}>
