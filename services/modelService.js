@@ -50,8 +50,10 @@ export async function recalcModelStats(groupId, categoryId, modelId) {
     if (m.status === 'reserved') stats.reserved++;
     if (m.status === 'sold') stats.sold++;
 
-    if (m.assembled === true) stats.assembled++;
-    if (m.assembled === false) stats.disassembled++;
+    if (m.status !== 'sold') {
+      if (m.assembled === true) stats.assembled++;
+      if (m.assembled === false) stats.disassembled++;
+    }
   });
 
   const modelRef = doc(

@@ -82,7 +82,11 @@ export default function LogScreen() {
       case 'UNDO_RESERVED':
         return `RAZVELJAVLJENA ARA - ${log.modelName ?? 'Model'} - ${log.machineLabel} ${log.reason ? ` (${log.reason})` : ''}`;
       case 'DELETE_MACHINE':
-        return `IZBRISAN - ${log.modelName} - ${log.machineLabel}`;  
+        return `IZBRISAN - ${log.modelName} - ${log.machineLabel}`;
+      case 'SESTAVLJEN':
+        return `SESTAVLJEN - ${log.modelName} - ${log.machineLabel}`;    
+      case 'RAZSTAVLJEN':
+        return `RAZSTAVLJEN - ${log.modelName} - ${log.machineLabel}`;  
       default:
         return log.type;
     }

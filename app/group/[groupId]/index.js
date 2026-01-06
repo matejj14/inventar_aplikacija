@@ -204,8 +204,8 @@ export default function GroupDashboard() {
     >
       {/* LEVA STRAN – slika */}
       <View style={styles.imageWrap}>
-        {item.imageUrl ? (
-          <Image source={{ uri: item.imageUrl }} style={styles.image} />
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={styles.image} />
         ) : (
           <Text style={styles.imagePlaceholder}>📷</Text>
         )}

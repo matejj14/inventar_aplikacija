@@ -78,6 +78,7 @@ export default function ModelMachines() {
 
   const [editModal, setEditModal] = useState(false);
   const [editMachine, setEditMachine] = useState(null);
+  const [editAssembled, setEditAssembled] = useState(false);
 
   const [editSerial, setEditSerial] = useState('');
   const [editYear, setEditYear] = useState('');
@@ -157,6 +158,7 @@ export default function ModelMachines() {
     setEditSerial(machine.serialNumber || '');
     setEditYear(machine.year || '');
     setEditNotes(machine.notes || '');
+    setEditAssembled(!!machine.assembled);
     setEditModal(true);
   }
 
@@ -427,7 +429,7 @@ export default function ModelMachines() {
             <Text style={styles.modalTitle}>Nov stroj</Text>
 
             <TextInput
-              placeholder="Serijska številka (opcijsko)"
+              placeholder="Serijska številka"
               value={serial}
               onChangeText={setSerial}
               style={styles.input}
@@ -566,6 +568,16 @@ export default function ModelMachines() {
                 style={[styles.input, { minHeight: 80 }]}
               />
 
+              {hasAssembly && (
+                <View style={styles.row}>
+                  <Text>{editAssembled ? 'Sestavljen' : 'Razstavljen'}</Text>
+                  <Switch
+                    value={editAssembled}
+                    onValueChange={setEditAssembled}
+                  />
+                </View>
+              )}
+
               <View style={styles.row}>
                 <TouchableOpacity onPress={() => setEditModal(false)}>
                   <Text>Prekliči</Text>
@@ -582,19 +594,26 @@ export default function ModelMachines() {
                         serialNumber: editSerial || null,
                         year: editYear,
                         notes: editNotes,
+                        ...(hasAssembly && { assembled: editAssembled }),
                       }
                     );
 
-                    await addLog(groupId, {
-                      type: 'EDIT_MACHINE',
-                      machineId: editMachine.id,
-                      machineLabel: editSerial || editMachine.serialNumber || 'Brez serijske',
-                      categoryId,
-                      modelId,
-                      userId: user.uid,
-                      username: user.username,
-                    });
+                    if (hasAssembly && editAssembled !== editMachine.assembled) {
+                      await addLog(groupId, {
+                        type: editAssembled ? 'SESTAVLJEN' : 'RAZSTAVLJEN',
+                        machineId: editMachine.id,
+                        machineLabel:
+                          editSerial || editMachine.serialNumber || 'Brez serijske',
+                        categoryId,
+                        modelId,
+                        modelName,
+                        userId: user.uid,
+                        username: user.username,
+                      });
+                    }
 
+                    await recalcModelStats(groupId, categoryId, modelId);
+                    recalcCategoryStats(groupId, categoryId);
                     setEditModal(false);
                     load();
                   }}
