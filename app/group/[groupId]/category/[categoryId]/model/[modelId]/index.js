@@ -21,6 +21,8 @@ import { recalcCategoryStats } from '../../../../../../../services/categoryServi
 import { addLog } from '../../../../../../../services/logService';
 import { getLocalUser } from '../../../../../../../services/userService';
 
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 
 
 function Notes({ text }) {
@@ -77,7 +79,11 @@ export default function ModelMachines() {
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+
   const [editCustomerPhone, setEditCustomerPhone] = useState('');
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editReservedAt, setEditReservedAt] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const [editModal, setEditModal] = useState(false);
   const [editMachine, setEditMachine] = useState(null);
@@ -162,7 +168,12 @@ export default function ModelMachines() {
     setEditYear(machine.year || '');
     setEditNotes(machine.notes || '');
     setEditAssembled(!!machine.assembled);
+
+    /*pri ari*/
+    setEditCustomerName(machine.customerName || '');
     setEditCustomerPhone(machine.customerPhone || '');
+    setEditReservedAt(machine.reservedAt || Date.now());
+
     setEditModal(true);
   }
 
@@ -557,16 +568,46 @@ export default function ModelMachines() {
               </View>
 
               {editMachine?.status === 'reserved' && (
-                <View style={styles.editRow}>
-                  <Text style={styles.editLabel}>Telefon:</Text>
-                  <TextInput
-                    value={editCustomerPhone}
-                    onChangeText={setEditCustomerPhone}
-                    keyboardType="phone-pad"
-                    style={styles.editInputInline}
-                  />
-                </View>
+                <>
+                  {/* KUPEC */}
+                  <View style={styles.editRow}>
+                    <Text style={styles.editLabel}>Kupec:</Text>
+                    <TextInput
+                      value={editCustomerName}
+                      onChangeText={setEditCustomerName}
+                      style={styles.editInputInline}
+                    />
+                  </View>
+
+                  {/* TELEFON */}
+                  <View style={styles.editRow}>
+                    <Text style={styles.editLabel}>Telefon:</Text>
+                    <TextInput
+                      value={editCustomerPhone}
+                      onChangeText={setEditCustomerPhone}
+                      keyboardType="phone-pad"
+                      style={styles.editInputInline}
+                    />
+                  </View>
+
+                   {/* DATUM ARE */}
+                  <View style={styles.editRow}>
+                    <Text style={styles.editLabel}>Datum are:</Text>
+
+                    <TouchableOpacity
+                      style={styles.dateInput}
+                      onPress={() => setShowDatePicker(true)}
+                    >
+                      <Text style={styles.dateText}>
+                        {editReservedAt
+                          ? new Date(editReservedAt).toLocaleDateString('sl-SI')
+                          : '—'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
               )}
+
 
               {hasAssembly && (
                 <View style={styles.row}>
@@ -606,7 +647,9 @@ export default function ModelMachines() {
                         ...(hasAssembly && { assembled: editAssembled }),
 
                         ...(editMachine.status === 'reserved' && {
+                          customerName: editCustomerName || null,
                           customerPhone: editCustomerPhone || null,
+                          reservedAt: editReservedAt,
                         }),
                       }
                     );
@@ -637,6 +680,22 @@ export default function ModelMachines() {
             </View>
           </View>
         </Modal>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={new Date(editReservedAt || Date.now())}
+            mode="date"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+
+              if (selectedDate) {
+                setEditReservedAt(selectedDate.getTime());
+              }
+            }}
+          />
+        )}
+
 
     </View>
   );
@@ -747,6 +806,17 @@ const styles = StyleSheet.create({
   textBase: {
     fontSize: 16,
     color: '#222',
+  },
+  dateInput: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    paddingVertical: 6,
+  },
+
+  dateText: {
+    fontSize: 16,
+    color: '#000',
   },
 
   moreButton: {  //3 pikice za urejanje

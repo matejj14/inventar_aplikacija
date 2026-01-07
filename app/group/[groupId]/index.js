@@ -43,10 +43,11 @@ export default function GroupDashboard() {
   const [search, setSearch] = useState('');
   const [onlyStock, setOnlyStock] = useState(false);
   const [onlyReserved, setOnlyReserved] = useState(false);
+  const [onlyNoStock, setOnlyNoStock] = useState(false);
 
   useEffect(() => {
     setFiltered(applyFilters(categories));
-  }, [search, onlyStock, onlyReserved, categories]);
+  }, [search, onlyStock, onlyReserved, onlyNoStock, categories]);
 
 
   // LOAD CATEGORIES
@@ -85,6 +86,10 @@ export default function GroupDashboard() {
 
     if (onlyReserved) {
       result = result.filter(c => (c.stats?.reserved || 0) > 0);
+    }
+
+    if (onlyNoStock) {
+      result = result.filter(c => (c.stats?.stock || 0) === 0);
     }
 
     return result;
@@ -282,6 +287,13 @@ export default function GroupDashboard() {
           onPress={() => setOnlyReserved(!onlyReserved)}
         >
           <Text>Ara</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterBtn, onlyNoStock && styles.active]}
+          onPress={() => setOnlyNoStock(!onlyNoStock)}
+        >
+          <Text>Brez zaloge</Text>
         </TouchableOpacity>
       </View>
       <FlatList
