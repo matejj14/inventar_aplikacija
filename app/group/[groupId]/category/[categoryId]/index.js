@@ -17,12 +17,17 @@ import { router } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 
+import { db } from '../../../../../firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
+
 export default function CategoryModels() {
   const { groupId, categoryId } = useLocalSearchParams();
 
   const [models, setModels] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modelName, setModelName] = useState('');
+
+  const [hasAssembly, setHasAssembly] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -33,6 +38,14 @@ export default function CategoryModels() {
   async function loadModels() {
     const data = await getModels(groupId, categoryId);
     setModels(data);
+
+    const catRef = doc(db, `groups/${groupId}/categories/${categoryId}`);
+    const catSnap = await getDoc(catRef);
+
+    if (catSnap.exists()) {
+      const canAssemble = catSnap.data().hasAssembly;
+      setHasAssembly(canAssemble);
+    }
   }
 
   async function handleAdd() {
@@ -58,9 +71,29 @@ export default function CategoryModels() {
             }
             >
             <View style={styles.card}>
-                <Text style={styles.title}>{item.name}</Text>
-                <Text>Na zalogi: {item.stats?.stock || 0}</Text>
-                <Text>Ara: {item.stats?.reserved || 0}</Text>
+              <Text style={styles.title}>{item.name}</Text>
+              <Text>
+                <Text style={styles.modelStatLabel}>Na zalogi: </Text>
+                <Text style={styles.stockNumber}>
+                  {item.stats?.stock ?? 0}
+                </Text>
+              </Text>
+
+              <Text>
+                <Text style={styles.modelStatLabel}>Ara: </Text>
+                <Text style={styles.reservedNumber}>
+                  {item.stats?.reserved ?? 0}
+                </Text>
+              </Text>
+
+              {hasAssembly && (
+                <Text>
+                  <Text style={styles.modelStatLabel}>Razstavljeni: </Text>
+                  <Text style={styles.disassembledNumber}>
+                    {item.stats?.disassembled ?? 0}
+                  </Text>
+                </Text>
+              )}
             </View>
             </TouchableOpacity>
         )}
@@ -105,7 +138,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
-  title: { fontSize: 18, fontWeight: 'bold' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 6, },
   sub: { color: '#555', marginTop: 4 },
   fab: {
     position: 'absolute',
@@ -141,5 +174,32 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+
+  modelStat: {
+    marginTop: 4,
+  },
+
+  modelStatLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+  },
+
+  stockNumber: {
+    fontSize: 18,
+    color: '#2e7d32',
+    fontWeight: 'bold',
+  },
+
+  reservedNumber: {
+    fontSize: 18,
+    color: '#f9a825',
+    fontWeight: 'bold',
+  },
+
+  disassembledNumber: {
+    fontSize: 18,
+    color: '#5e5e5eff',
   },
 });

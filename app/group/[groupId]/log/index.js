@@ -144,6 +144,7 @@ return (
               {/* ===== LOGI ZA TA DATUM ===== */}
               {item.data.map(log => (
                 <View
+                  key={log.id}   // ⬅️ TO MANJKA
                   style={[
                     styles.card,
                     log.type === 'DELETE_MACHINE' && { backgroundColor: '#ffebee' },

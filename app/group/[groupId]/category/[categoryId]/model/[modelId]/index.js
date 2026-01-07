@@ -31,14 +31,15 @@ function Notes({ text }) {
   const isShort = text.length <= 120;
 
   return (
-    <View style={{ marginTop: 4 }}>
-      <Text numberOfLines={expanded || isShort ? undefined : 2}>
+    <View style={{ marginVertical: 8, }}>
+      <Text style={styles.textBase} numberOfLines={expanded || isShort ? undefined : 2}>
+        <Text style={styles.label}>Opombe: </Text>
         {text}
       </Text>
 
       {!isShort && (
         <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-          <Text style={{ color: '#1565c0', marginTop: 2 }}>
+          <Text style={{ color: '#1565c0', marginTop: 2, marginBottom: 2, }}>
             {expanded ? 'Pokaži manj' : 'Pokaži več'}
           </Text>
         </TouchableOpacity>
@@ -46,6 +47,7 @@ function Notes({ text }) {
     </View>
   );
 }
+
 
 
 
@@ -75,6 +77,7 @@ export default function ModelMachines() {
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [editCustomerPhone, setEditCustomerPhone] = useState('');
 
   const [editModal, setEditModal] = useState(false);
   const [editMachine, setEditMachine] = useState(null);
@@ -159,6 +162,7 @@ export default function ModelMachines() {
     setEditYear(machine.year || '');
     setEditNotes(machine.notes || '');
     setEditAssembled(!!machine.assembled);
+    setEditCustomerPhone(machine.customerPhone || '');
     setEditModal(true);
   }
 
@@ -293,8 +297,8 @@ export default function ModelMachines() {
 
   function openReserveModal(machine) {
       setSelectedMachine(machine);
-      setCustomerName('');
-      setCustomerPhone('');
+      setCustomerName(machine.customerName || '');
+      setCustomerPhone(machine.customerPhone || '');
       setReserveModal(true);
   }
 
@@ -359,23 +363,37 @@ export default function ModelMachines() {
                 </TouchableOpacity>
               </View>
 
-              <Text>Letnik: {item.year}</Text>
+              <Text style={styles.textBase}>
+                <Text style={styles.label}>Letnik:</Text> {item.year}
+              </Text>
 
               <Notes text={item.notes} />
 
-              <Text>Status: {statusLabel(item.status)}</Text>
+              <Text style={styles.textBase}>
+                <Text style={styles.label}>Status:</Text> {statusLabel(item.status)}
+              </Text>
 
               {hasAssembly && (
-                <Text>
+                <Text style={styles.textBase}>
+                  <Text style={styles.label}>Stanje:</Text>{' '}
                   {item.assembled ? 'Sestavljen' : 'Razstavljen'}
                 </Text>
               )}
 
               {item.status === 'reserved' && (
                 <>
-                  <Text>Kupec: {item.customerName}</Text>
-                  <Text>
-                    Datum are:{' '}
+                  <Text style={styles.textBase}>
+                    <Text style={styles.label}>Kupec: </Text>
+                    {item.customerName}
+                  </Text>
+                  
+                  <Text style={styles.textBase}>
+                    <Text style={styles.label}>Telefon: </Text>
+                    {item.customerPhone || '/'}
+                  </Text>
+
+                  <Text style={styles.textBase}>
+                    <Text style={styles.label}>Datum are:</Text>{' '}
                     {item.reservedAt
                       ? new Date(item.reservedAt).toLocaleDateString()
                       : '—'}
@@ -518,38 +536,56 @@ export default function ModelMachines() {
             <View style={styles.modal}>
               <Text style={styles.modalTitle}>Uredi stroj</Text>
 
-              <TextInput
-                value={editSerial}
-                onChangeText={setEditSerial}
-                placeholder="Serijska številka"
-                style={styles.input}
-              />
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>Serijska št:</Text>
+                <TextInput
+                  value={editSerial}
+                  onChangeText={setEditSerial}
+                  keyboardType="numeric"
+                  style={styles.editInputInline}
+                />
+              </View>
 
-              <TextInput
-                value={editYear}
-                onChangeText={setEditYear}
-                placeholder="Letnik"
-                keyboardType="numeric"
-                style={styles.input}
-              />
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>Letnik:</Text>
+                <TextInput
+                  value={editYear}
+                  onChangeText={setEditYear}
+                  keyboardType="numeric"
+                  style={styles.editInputInline}
+                />
+              </View>
 
-              <TextInput
-                value={editNotes}
-                onChangeText={setEditNotes}
-                placeholder="Opombe"
-                multiline
-                style={[styles.input, { minHeight: 80 }]}
-              />
+              {editMachine?.status === 'reserved' && (
+                <View style={styles.editRow}>
+                  <Text style={styles.editLabel}>Telefon:</Text>
+                  <TextInput
+                    value={editCustomerPhone}
+                    onChangeText={setEditCustomerPhone}
+                    keyboardType="phone-pad"
+                    style={styles.editInputInline}
+                  />
+                </View>
+              )}
 
               {hasAssembly && (
                 <View style={styles.row}>
-                  <Text>{editAssembled ? 'Sestavljen' : 'Razstavljen'}</Text>
+                  <Text style={styles.editLabel}>{editAssembled ? 'Sestavljen' : 'Razstavljen'}</Text>
                   <Switch
                     value={editAssembled}
                     onValueChange={setEditAssembled}
                   />
                 </View>
               )}
+
+              <TextInput
+                value={editNotes}
+                onChangeText={setEditNotes}
+                placeholder="Opombe"
+                multiline
+                style={[styles.input, { minHeight: 80, marginBottom: 4, }]}
+              />
+
 
               <View style={styles.row}>
                 <TouchableOpacity onPress={() => setEditModal(false)}>
@@ -568,6 +604,10 @@ export default function ModelMachines() {
                         year: editYear,
                         notes: editNotes,
                         ...(hasAssembly && { assembled: editAssembled }),
+
+                        ...(editMachine.status === 'reserved' && {
+                          customerPhone: editCustomerPhone || null,
+                        }),
                       }
                     );
 
@@ -664,6 +704,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  editLabel: {
+    width: 90,
+    fontWeight: '500',
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+
+  editInputInline: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    fontSize: 16,
+    paddingVertical: 4,
+  },
+
   statusButton: {
     marginTop: 10,
     padding: 10,
@@ -675,6 +736,17 @@ const styles = StyleSheet.create({
   statusButtonText: {
   color: '#fff',
   fontSize: 16,
+  },
+
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginVertical: 4,
+  },
+  textBase: {
+    fontSize: 16,
+    color: '#222',
   },
 
   moreButton: {  //3 pikice za urejanje
