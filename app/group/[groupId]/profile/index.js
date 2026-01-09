@@ -8,6 +8,7 @@ import {
   Modal,     
   TextInput,
   Alert,
+  Image,
 } from 'react-native';
 import { router, useFocusEffect, useGlobalSearchParams } from 'expo-router';
 
@@ -19,6 +20,8 @@ import {
   getUserGroups,
 } from '../../../../services/groupService';
 import { saveLastGroup } from '../../../../services/groupSessionService';
+
+import { fetchRandomDog } from '../../../../services/dogApiService';
 
 
 export default function ProfileScreen() {
@@ -37,6 +40,9 @@ export default function ProfileScreen() {
   const [groupPassword, setGroupPassword] = useState('');
 
   const [error, setError] = useState('');
+
+  const [dogImage, setDogImage] = useState(null);
+  const [dogLoading, setDogLoading] = useState(false);
 
 
   useFocusEffect(
@@ -116,6 +122,18 @@ export default function ProfileScreen() {
     setError('');
   }
 
+  async function handleDog() {
+    try {
+      setDogLoading(true);
+      const url = await fetchRandomDog();
+      setDogImage(url);
+    } catch (e) {
+      Alert.alert('Napaka', 'Ni bilo mogoče pridobiti slike kužka.');
+    } finally {
+      setDogLoading(false);
+    }
+  }
+
 
   return (
     <>
@@ -162,6 +180,22 @@ export default function ProfileScreen() {
           }}
 
         />
+
+        {dogImage && (
+          <Image
+            source={{ uri: dogImage }}
+            style={styles.dogImage}
+          />
+        )}
+
+        <TouchableOpacity
+          style={styles.dogButton}
+          onPress={handleDog}
+        >
+          <Text style={styles.actionText}>
+            {dogLoading ? '🐶 Nalagam...' : '🐶'}
+          </Text>
+        </TouchableOpacity>
 
         <View style={{ marginTop: 16 }}>
           <TouchableOpacity
@@ -388,6 +422,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1565c0',
     fontWeight: '600',
+  },
+
+  dogButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+
+  dogButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1565c0',
+  },
+  dogImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 16,
+    marginBottom: 12,
+    resizeMode: 'contain',
   },
 
 });

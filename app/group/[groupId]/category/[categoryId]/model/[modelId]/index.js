@@ -552,7 +552,6 @@ export default function ModelMachines() {
                 <TextInput
                   value={editSerial}
                   onChangeText={setEditSerial}
-                  keyboardType="numeric"
                   style={styles.editInputInline}
                 />
               </View>
