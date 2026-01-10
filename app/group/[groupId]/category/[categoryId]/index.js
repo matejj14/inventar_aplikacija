@@ -19,6 +19,7 @@ import { useCallback } from 'react';
 
 import { db } from '../../../../../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CategoryModels() {
   const { groupId, categoryId } = useLocalSearchParams();
@@ -57,7 +58,7 @@ export default function CategoryModels() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         data={models}
         keyExtractor={i => i.id}
@@ -126,7 +127,7 @@ export default function CategoryModels() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

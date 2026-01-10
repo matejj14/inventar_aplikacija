@@ -14,6 +14,7 @@ import { getLocalUser, saveLocalUser } from '../services/userService';
 import { createGroup, findGroupByName, joinGroup } from '../services/groupService';
 import { saveLastGroup } from '../services/groupSessionService';
 import { getLastGroup } from '../services/groupSessionService';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
@@ -128,7 +129,7 @@ export default function HomeScreen() {
 
   // glavni ekran s skupinami (zaenkrat samo create/join)
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Pozdravljen, {user.username}!</Text>
       <Text style={styles.subtitle}>Ustvari ali se pridruži skupini (podjetju).</Text>
 
@@ -159,7 +160,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Kasneje: tu bo seznam skupin, katerim pripada user */}
-    </View>
+    </SafeAreaView>
   );
 }
 

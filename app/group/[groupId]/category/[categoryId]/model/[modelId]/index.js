@@ -22,6 +22,7 @@ import { addLog } from '../../../../../../../services/logService';
 import { getLocalUser } from '../../../../../../../services/userService';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 
@@ -342,7 +343,7 @@ export default function ModelMachines() {
 
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
        <FlatList
            data={visibleMachines}
            keyExtractor={(i) => i.id}
@@ -696,7 +697,7 @@ export default function ModelMachines() {
         )}
 
 
-    </View>
+    </SafeAreaView>
   );
 }
 

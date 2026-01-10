@@ -22,6 +22,7 @@ import {
 import { saveLastGroup } from '../../../../services/groupSessionService';
 
 import { fetchRandomDog } from '../../../../services/dogApiService';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 export default function ProfileScreen() {
@@ -137,7 +138,7 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <Text style={styles.title}>Profil</Text>
 
         {user && (
@@ -212,7 +213,7 @@ export default function ProfileScreen() {
             <Text style={styles.actionText}>🔍 Pridruži se skupini</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
       
 
       <Modal visible={createVisible} transparent animationType="slide">

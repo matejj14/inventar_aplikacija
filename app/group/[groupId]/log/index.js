@@ -14,6 +14,7 @@ import { useGlobalSearchParams, useFocusEffect } from 'expo-router';
 import { getLogs } from '../../../../services/logService';
 import { undoLog } from '../../../../services/undoService';
 import { getLocalUser } from '../../../../services/userService';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LogScreen() {
   const params = useGlobalSearchParams();
@@ -123,7 +124,7 @@ function groupLogsByDate(logs) {
 
 return (
     <>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <FlatList
           data={sections}
           keyExtractor={(item) => item.date}
@@ -173,7 +174,7 @@ return (
             </View>
           )}
         />
-      </View>
+      </SafeAreaView>
 
       {/* ===== UNDO MODAL ===== */}
       <Modal visible={undoModal} transparent animationType="slide">

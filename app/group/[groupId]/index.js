@@ -25,6 +25,7 @@ import { router } from 'expo-router';
 
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 export default function GroupDashboard() {
@@ -266,7 +267,7 @@ export default function GroupDashboard() {
 
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.filterRow}>
         <TextInput
           placeholder="Išči kategorijo..."
@@ -326,7 +327,7 @@ export default function GroupDashboard() {
         }}
         onSave={handleEditSave}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

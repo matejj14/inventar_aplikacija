@@ -10,7 +10,7 @@ export default function GroupLayout() {
 
   return (
     <Tabs
-      key={currentGroupId} // To pusti tukaj!
+      key={currentGroupId}
       screenOptions={{ headerShown: false, tabBarActiveTintColor: '#1565c0' }}
     >
       <Tabs.Screen name="index" options={{ title: 'Domov' }} />
