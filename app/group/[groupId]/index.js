@@ -16,6 +16,7 @@ import { addCategory, getCategories, updateCategory } from '../../../services/ca
 //za slike
 import { uploadCategoryImage } from '../../../services/categoryImageService';
 import { pickFromGallery, takePhoto } from '../../../components/ImagePickerSheet';
+import AnchorMenu from '../../../components/AnchorMenu';
 import { Alert, Image } from 'react-native';
 
 //import { Alert } from 'react-native';
@@ -45,6 +46,10 @@ export default function GroupDashboard() {
   const [onlyStock, setOnlyStock] = useState(false);
   const [onlyReserved, setOnlyReserved] = useState(false);
   const [onlyNoStock, setOnlyNoStock] = useState(false);
+
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 });
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     setFiltered(applyFilters(categories));
@@ -152,49 +157,48 @@ export default function GroupDashboard() {
     );
   }
 
+  function categoryHasItems(category) {
+    const stock = category?.stats?.stock ?? 0;
+    const reserved = category?.stats?.reserved ?? 0;
+    return stock > 0 || reserved > 0;
+  }
 
-  function openMenu(category) {
+
+  function openMenu(category, event) {
+    event.target.measureInWindow((x, y, width, height) => {
+      setMenuAnchor({
+        x: x + width,
+        y: y + height,
+      });
+      setSelectedCategory(category);
+      setMenuVisible(true);
+    });
+  }
+
+  function confirmDelete(category) {
+    if (categoryHasItems(category)) {
+        Alert.alert(
+          'Brisanje ni dovoljeno',
+          'Kategorije z zalogo ali aro ni mogoče izbrisati.'
+        );
+        return;
+    }
+
     Alert.alert(
-      category.name,
-      'Izberi možnost',
+      'Potrditev brisanja',
+      `Res želiš izbrisati kategorijo "${category.name}"?`,
       [
-        {
-          text: category.favorite ? 'Odstrani iz priljubljenih' : 'Označi kot priljubljeno',
-          onPress: async () => {
-            await toggleFavorite(groupId, category.id, !category.favorite);
-            loadCategories();
-          },
-        },
-        {
-          text: 'Uredi',
-          onPress: () => {
-            setEditingCategory(category);
-            setEditVisible(true);
-          },
-        },
+        { text: 'Prekliči', style: 'cancel' },
         {
           text: 'Izbriši',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              'Potrditev',
-              'Res želiš izbrisati to kategorijo?',
-              [
-                { text: 'Prekliči', style: 'cancel' },
-                {
-                  text: 'Izbriši',
-                  style: 'destructive',
-                  onPress: async () => {
-                    await deleteCategory(groupId, category.id);
-                    loadCategories();
-                  },
-                },
-              ]
-            );
+          onPress: async () => {
+            await deleteCategory(groupId, category.id);
+            loadCategories();
           },
         },
-        { text: 'Prekliči', style: 'cancel' },
-      ]
+      ],
+      { cancelable: true }
     );
   }
 
@@ -229,7 +233,7 @@ export default function GroupDashboard() {
           </View>
 
           <TouchableOpacity
-            onPress={() => openMenu(item)}
+            onPress={(e) => openMenu(item, e)}
             hitSlop={10}
           >
             <Text style={styles.menu}>⋮</Text>
@@ -327,6 +331,42 @@ export default function GroupDashboard() {
         }}
         onSave={handleEditSave}
       />
+
+      <AnchorMenu
+        visible={menuVisible}
+        anchor={menuAnchor}
+        onClose={() => setMenuVisible(false)}
+        items={[
+          {
+            label: selectedCategory?.favorite
+              ? 'Odstrani iz priljubljenih'
+              : 'Označi kot priljubljeno',
+            onPress: async () => {
+              await toggleFavorite(
+                groupId,
+                selectedCategory.id,
+                !selectedCategory.favorite
+              );
+              loadCategories();
+            },
+          },
+          {
+            label: 'Uredi',
+            onPress: () => {
+              setEditingCategory(selectedCategory);
+              setEditVisible(true);
+            },
+          },
+          {
+            label: 'Izbriši',
+            destructive: true,
+            disabled: categoryHasItems(selectedCategory),
+            onPress: () => {
+              confirmDelete(selectedCategory);
+            },
+          },
+        ]}
+      />
     </SafeAreaView>
   );
 }
@@ -401,17 +441,6 @@ const styles = StyleSheet.create({
     fontSize: 36,
     color: '#003366',
   },
-  /*
-  imagePlaceholder: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#e6f2fb',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  */
   imageText: {
     fontSize: 28,
   },
