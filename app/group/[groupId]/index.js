@@ -28,7 +28,6 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
 export default function GroupDashboard() {
   const params = useLocalSearchParams();
   const groupId = params?.groupId;
@@ -43,9 +42,9 @@ export default function GroupDashboard() {
   //state za filtre
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState('');
-  const [onlyStock, setOnlyStock] = useState(false);
-  const [onlyReserved, setOnlyReserved] = useState(false);
-  const [onlyNoStock, setOnlyNoStock] = useState(false);
+  const [activeFilter, setActiveFilter] = useState(null);// možne vrednosti: 'stock' | 'reserved' | 'nostock' | null
+  const [filtersVisible, setFiltersVisible] = useState(false);
+
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 });
@@ -53,7 +52,7 @@ export default function GroupDashboard() {
 
   useEffect(() => {
     setFiltered(applyFilters(categories));
-  }, [search, onlyStock, onlyReserved, onlyNoStock, categories]);
+  }, [search, activeFilter, categories]);
 
 
   // LOAD CATEGORIES
@@ -86,15 +85,15 @@ export default function GroupDashboard() {
       );
     }
 
-    if (onlyStock) {
+    if (activeFilter === 'stock') {
       result = result.filter(c => (c.stats?.stock || 0) > 0);
     }
 
-    if (onlyReserved) {
+    if (activeFilter === 'reserved') {
       result = result.filter(c => (c.stats?.reserved || 0) > 0);
     }
 
-    if (onlyNoStock) {
+    if (activeFilter === 'nostock') {
       result = result.filter(c => (c.stats?.stock || 0) === 0);
     }
 
@@ -272,101 +271,129 @@ export default function GroupDashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.filterRow}>
-        <TextInput
-          placeholder="Išči kategorijo..."
-          value={search}
-          onChangeText={setSearch}
-          style={styles.search}
-        />
+     <View style={styles.searchRow}>
+      <TextInput
+        placeholder="Išči kategorijo..."
+        value={search}
+        onChangeText={setSearch}
+        style={styles.search}
+      />
 
+      <TouchableOpacity
+        style={styles.filterToggle}
+        onPress={() => setFiltersVisible(prev => !prev)}
+      >
+        <Text style={styles.filterToggleText}>
+          Filtri▼
+        </Text>
+      </TouchableOpacity>
+    </View>
+    {filtersVisible && (
+      <View style={styles.filtersRow}>
         <TouchableOpacity
-          style={[styles.filterBtn, onlyStock && styles.active]}
-          onPress={() => setOnlyStock(!onlyStock)}
+          style={[
+            styles.filterBtn,
+            activeFilter === 'stock' && styles.active,
+          ]}
+          onPress={() =>
+            setActiveFilter(prev => (prev === 'stock' ? null : 'stock'))
+          }
         >
           <Text>Na zalogi</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.filterBtn, onlyReserved && styles.active]}
-          onPress={() => setOnlyReserved(!onlyReserved)}
+          style={[
+            styles.filterBtn,
+            activeFilter === 'reserved' && styles.active,
+          ]}
+          onPress={() =>
+            setActiveFilter(prev => (prev === 'reserved' ? null : 'reserved'))
+          }
         >
           <Text>Ara</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.filterBtn, onlyNoStock && styles.active]}
-          onPress={() => setOnlyNoStock(!onlyNoStock)}
+          style={[
+            styles.filterBtn,
+            activeFilter === 'nostock' && styles.active,
+          ]}
+          onPress={() =>
+            setActiveFilter(prev => (prev === 'nostock' ? null : 'nostock'))
+          }
         >
           <Text>Brez zaloge</Text>
         </TouchableOpacity>
       </View>
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={renderCategory}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      />
+    )}
 
-      {/* + gumb */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.fabText}>＋</Text>
-      </TouchableOpacity>
+    <FlatList
+      data={filtered}
+      keyExtractor={(item) => item.id}
+      renderItem={renderCategory}
+      contentContainerStyle={{ paddingBottom: 100 }}
+    />
 
-      {/* modal */}
-      <AddCategoryModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSave={handleAddCategory}
-      />
-      <EditCategoryModal
-        visible={editVisible}
-        category={editingCategory}
-        onClose={() => {
-          setEditVisible(false);
-          setEditingCategory(null);
-        }}
-        onSave={handleEditSave}
-      />
+    {/* + gumb */}
+    <TouchableOpacity
+      style={styles.fab}
+      onPress={() => setModalVisible(true)}
+    >
+      <Text style={styles.fabText}>＋</Text>
+    </TouchableOpacity>
 
-      <AnchorMenu
-        visible={menuVisible}
-        anchor={menuAnchor}
-        onClose={() => setMenuVisible(false)}
-        items={[
-          {
-            label: selectedCategory?.favorite
-              ? 'Odstrani iz priljubljenih'
-              : 'Označi kot priljubljeno',
-            onPress: async () => {
-              await toggleFavorite(
-                groupId,
-                selectedCategory.id,
-                !selectedCategory.favorite
-              );
-              loadCategories();
-            },
+    {/* modal */}
+    <AddCategoryModal
+      visible={modalVisible}
+      onClose={() => setModalVisible(false)}
+      onSave={handleAddCategory}
+    />
+    <EditCategoryModal
+      visible={editVisible}
+      category={editingCategory}
+      onClose={() => {
+        setEditVisible(false);
+        setEditingCategory(null);
+      }}
+      onSave={handleEditSave}
+    />
+
+    <AnchorMenu
+      visible={menuVisible}
+      anchor={menuAnchor}
+      onClose={() => setMenuVisible(false)}
+      items={[
+        {
+          label: selectedCategory?.favorite
+            ? 'Odstrani iz priljubljenih'
+            : 'Označi kot priljubljeno',
+          onPress: async () => {
+            await toggleFavorite(
+              groupId,
+              selectedCategory.id,
+              !selectedCategory.favorite
+            );
+            loadCategories();
           },
-          {
-            label: 'Uredi',
-            onPress: () => {
-              setEditingCategory(selectedCategory);
-              setEditVisible(true);
-            },
+        },
+        {
+          label: 'Uredi',
+          onPress: () => {
+            setEditingCategory(selectedCategory);
+            setEditVisible(true);
           },
-          {
-            label: 'Izbriši',
-            destructive: true,
-            disabled: categoryHasItems(selectedCategory),
-            onPress: () => {
-              confirmDelete(selectedCategory);
-            },
+        },
+        {
+          label: 'Izbriši',
+          destructive: true,
+          disabled: categoryHasItems(selectedCategory),
+          onPress: () => {
+            confirmDelete(selectedCategory);
           },
-        ]}
-      />
+        },
+      ]}
+    />
     </SafeAreaView>
   );
 }
@@ -514,24 +541,51 @@ const styles = StyleSheet.create({
     color: '#1565c0',
     fontWeight: '600',
   },
-  filterRow: {
-  marginBottom: 12,
+ searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
+
   search: {
+    flex: 1,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
     padding: 8,
-    marginBottom: 8,
+    marginRight: 8,
   },
+
+  filterToggle: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#e6f2fb',
+    borderWidth:1,
+    borderColor: "rgb(175, 199, 224)",
+  },
+
+  filterToggleText: {
+    color: '#003366',
+    fontWeight: '600',
+  },
+
+  filtersRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+
   filterBtn: {
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#eee',
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#bbbaba',
   },
   active: {
     backgroundColor: '#cfe8ff',
+    borderColor: '#014e9b',
   },
 
 });
