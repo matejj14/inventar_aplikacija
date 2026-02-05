@@ -34,6 +34,7 @@ export default function AddCategoryModal({ visible, onClose, onSave }) {
 
           <TextInput
             placeholder="Ime kategorije"
+            placeholderTextColor="#6e6e6e" 
             style={styles.input}
             value={name}
             onChangeText={setName}
@@ -41,6 +42,7 @@ export default function AddCategoryModal({ visible, onClose, onSave }) {
 
           <TextInput
             placeholder="Znamka"
+            placeholderTextColor="#6e6e6e" 
             style={styles.input}
             value={brand}
             onChangeText={setBrand}

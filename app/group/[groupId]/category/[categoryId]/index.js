@@ -112,6 +112,7 @@ export default function CategoryModels() {
             <Text style={styles.modalTitle}>Nov model</Text>
             <TextInput
               placeholder="Ime modela (npr. 122)"
+              placeholderTextColor="#6e6e6e" 
               style={styles.input}
               value={modelName}
               onChangeText={setModelName}

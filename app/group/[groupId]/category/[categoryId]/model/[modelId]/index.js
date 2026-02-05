@@ -452,6 +452,7 @@ export default function ModelMachines() {
 
             <TextInput
               placeholder="Serijska številka"
+              placeholderTextColor="#6e6e6e" 
               value={serial}
               onChangeText={setSerial}
               style={styles.input}
@@ -459,6 +460,7 @@ export default function ModelMachines() {
 
             <TextInput
               placeholder="Letnik"
+              placeholderTextColor="#6e6e6e" 
               value={year}
               onChangeText={setYear}
               style={styles.input}
@@ -467,6 +469,7 @@ export default function ModelMachines() {
 
             <TextInput
               placeholder="Opombe"
+              placeholderTextColor="#6e6e6e" 
               value={notes}
               onChangeText={setNotes}
               style={styles.input}
@@ -501,6 +504,7 @@ export default function ModelMachines() {
 
             <TextInput
                 placeholder="Ime kupca"
+                placeholderTextColor="#6e6e6e" 
                 value={customerName}
                 onChangeText={setCustomerName}
                 style={styles.input}
@@ -508,6 +512,7 @@ export default function ModelMachines() {
 
             <TextInput
                 placeholder="Telefon (opcijsko)"
+                placeholderTextColor="#6e6e6e" 
                 value={customerPhone}
                 onChangeText={setCustomerPhone}
                 style={styles.input}
@@ -642,6 +647,7 @@ export default function ModelMachines() {
                 value={editNotes}
                 onChangeText={setEditNotes}
                 placeholder="Opombe"
+                placeholderTextColor="#6e6e6e" 
                 multiline
                 style={[styles.input, { minHeight: 80, marginBottom: 4, }]}
               />

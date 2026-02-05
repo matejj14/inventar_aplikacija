@@ -86,6 +86,7 @@ export default function EditCategoryModal({
 
           <TextInput
             placeholder="Ime kategorije"
+            placeholderTextColor="#6e6e6e" 
             value={name}
             onChangeText={setName}
             style={styles.input}
@@ -93,6 +94,7 @@ export default function EditCategoryModal({
 
           <TextInput
             placeholder="Znamka"
+            placeholderTextColor="#6e6e6e" 
             value={brand}
             onChangeText={setBrand}
             style={styles.input}

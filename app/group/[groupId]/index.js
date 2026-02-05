@@ -274,6 +274,7 @@ export default function GroupDashboard() {
      <View style={styles.searchRow}>
       <TextInput
         placeholder="Išči kategorijo..."
+        placeholderTextColor="#2c2c2c" 
         value={search}
         onChangeText={setSearch}
         style={styles.search}

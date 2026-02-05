@@ -223,6 +223,7 @@ export default function ProfileScreen() {
 
             <TextInput
               placeholder="Ime skupine"
+              placeholderTextColor="#6e6e6e" 
               value={groupName}
               onChangeText={setGroupName}
               style={styles.input}
@@ -230,6 +231,7 @@ export default function ProfileScreen() {
 
             <TextInput
               placeholder="Geslo"
+              placeholderTextColor="#6e6e6e" 
               secureTextEntry
               value={groupPassword}
               onChangeText={setGroupPassword}
