@@ -41,9 +41,7 @@ export default function AnchorMenu({
                 styles.item,
                 item.disabled && styles.disabledItem,
             ]}
-            disabled={item.disabled}
             onPress={() => {
-                //if (item.disabled) return;
                 onClose();
                 item.onPress();
             }}

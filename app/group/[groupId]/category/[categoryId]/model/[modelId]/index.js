@@ -24,6 +24,8 @@ import { getLocalUser } from '../../../../../../../services/userService';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import AnchorMenu from '../../../../../../../components/AnchorMenu';
+
 
 
 function Notes({ text }) {
@@ -94,6 +96,11 @@ export default function ModelMachines() {
   const [editYear, setEditYear] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
+  //meni pri treh pikicah
+  const [machineMenuVisible, setMachineMenuVisible] = useState(false);
+  const [machineMenuAnchor, setMachineMenuAnchor] = useState({ x: 0, y: 0 });
+  const [menuMachine, setMenuMachine] = useState(null);
+
   const visibleMachines = machines.filter(
     m => m.status !== 'sold'
   );  
@@ -161,6 +168,18 @@ export default function ModelMachines() {
     setNotes('');
     setModalVisible(false);
     load();
+  }
+
+  //funkcija za odpiranje menija strojev (3 pikice)
+  function openMachineMenu(machine, event) {
+    event.target.measureInWindow((x, y, width, height) => {
+      setMachineMenuAnchor({
+        x: x + width,
+        y: y + height,
+      });
+      setMenuMachine(machine);
+      setMachineMenuVisible(true);
+    });
   }
 
   function openEditMachine(machine) {
@@ -314,7 +333,7 @@ export default function ModelMachines() {
       setReserveModal(true);
   }
 
-  function openMachineMenu(machine) {
+  /*function openMachineMenu(machine) {
     Alert.alert(
       'Možnosti',
       machine.serialNumber || 'Stroj',
@@ -339,7 +358,7 @@ export default function ModelMachines() {
       ]
     );
   }
-
+*/
 
 
   return (
@@ -367,7 +386,7 @@ export default function ModelMachines() {
                 </Text>
 
                 <TouchableOpacity
-                  onPress={() => openMachineMenu(item)}
+                  onPress={(e) => openMachineMenu(item, e)}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   style={styles.moreButton}
                 >
@@ -695,6 +714,27 @@ export default function ModelMachines() {
             }}
           />
         )}
+
+      <AnchorMenu
+        visible={machineMenuVisible}
+        anchor={machineMenuAnchor}
+        onClose={() => setMachineMenuVisible(false)}
+        items={[
+          {
+            label: 'Uredi',
+            onPress: () => openEditMachine(menuMachine),
+          },
+          {
+            label: 'Spremeni status',
+            onPress: () => openStatusMenu(menuMachine),
+          },
+          {
+            label: 'Izbriši stroj',
+            destructive: true,
+            onPress: () => confirmDeleteMachine(menuMachine),
+          },
+        ]}
+      />
 
 
     </SafeAreaView>
