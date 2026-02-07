@@ -50,7 +50,12 @@ export default function AddCategoryModal({ visible, onClose, onSave }) {
 
           <View style={styles.row}>
             <Text>Razstavljeni stroji</Text>
-            <Switch value={hasAssembly} onValueChange={setHasAssembly} />
+            <Switch 
+              value={hasAssembly} 
+              onValueChange={setHasAssembly} 
+              trackColor={{ false: '#ccc', true: '#6cb6ff' }}
+              thumbColor="#ffffff"
+            />
           </View>
 
           <View style={styles.buttons}>

@@ -481,6 +481,8 @@ export default function ModelMachines() {
                 <Switch
                   value={!assembled}
                   onValueChange={(v) => setAssembled(!v)}
+                  trackColor={{ false: '#ccc', true: '#6cb6ff' }}
+                  thumbColor="#ffffff"
                 />
               </View>
             )}
@@ -639,6 +641,8 @@ export default function ModelMachines() {
                   <Switch
                     value={editAssembled}
                     onValueChange={setEditAssembled}
+                    trackColor={{ false: '#ccc', true: '#6cb6ff' }}
+                    thumbColor="#ffffff"
                   />
                 </View>
               )}
