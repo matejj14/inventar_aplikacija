@@ -27,7 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AnchorMenu from '../../../../../../../components/AnchorMenu';
 
 
-
+/*
 function Notes({ text }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -52,7 +52,30 @@ function Notes({ text }) {
     </View>
   );
 }
+*/
 
+function InlineNotes({ machine, onSave }) {
+  const [text, setText] = useState(machine.notes || '');
+
+  useEffect(() => {
+    setText(machine.notes || '');
+  }, [machine.id, machine.notes]);
+
+  return (
+    <TextInput
+      value={text}
+      onChangeText={setText}
+      onEndEditing={() => {
+        if (text !== (machine.notes || '')) {
+          onSave(text);
+        }
+      }}
+      multiline
+      style={styles.notesBox}
+      placeholderTextColor="#8a8a8a"
+    />
+  );
+}
 
 
 
@@ -94,7 +117,6 @@ export default function ModelMachines() {
 
   const [editSerial, setEditSerial] = useState('');
   const [editYear, setEditYear] = useState('');
-  const [editNotes, setEditNotes] = useState('');
 
   //meni pri treh pikicah
   const [machineMenuVisible, setMachineMenuVisible] = useState(false);
@@ -142,6 +164,15 @@ export default function ModelMachines() {
     }
   }
 
+ async function handleNotesSave(machine, text) {
+    await updateMachineStatus(groupId, categoryId, modelId, machine.id, {
+      notes: text,
+    });
+    setMachines(prev =>
+      prev.map(m => (m.id === machine.id ? { ...m, notes: text } : m))
+    );
+ }
+
  async function handleAdd() {
     await addMachine(groupId, categoryId, modelId, {
         serialNumber: serial || null,
@@ -186,7 +217,6 @@ export default function ModelMachines() {
     setEditMachine(machine);
     setEditSerial(machine.serialNumber || '');
     setEditYear(machine.year || '');
-    setEditNotes(machine.notes || '');
     setEditAssembled(!!machine.assembled);
 
     /*pri ari*/
@@ -398,8 +428,6 @@ export default function ModelMachines() {
                 <Text style={styles.label}>Letnik:</Text> {item.year}
               </Text>
 
-              <Notes text={item.notes} />
-
               <Text style={styles.textBase}>
                 <Text style={styles.label}>Status:</Text> {statusLabel(item.status)}
               </Text>
@@ -431,6 +459,12 @@ export default function ModelMachines() {
                   </Text>
                 </>
               )}
+
+              <InlineNotes
+                machine={item}
+                onSave={(text) => handleNotesSave(item, text)}
+              />
+
             </View>
           )}
 
@@ -647,15 +681,6 @@ export default function ModelMachines() {
                 </View>
               )}
 
-              <TextInput
-                value={editNotes}
-                onChangeText={setEditNotes}
-                placeholder="Opombe"
-                placeholderTextColor="#6e6e6e" 
-                multiline
-                style={[styles.input, { minHeight: 80, marginBottom: 4, }]}
-              />
-
 
               <View style={styles.row}>
                 <TouchableOpacity onPress={() => setEditModal(false)}>
@@ -672,7 +697,6 @@ export default function ModelMachines() {
                       {
                         serialNumber: editSerial || null,
                         year: editYear,
-                        notes: editNotes,
                         ...(hasAssembly && { assembled: editAssembled }),
 
                         ...(editMachine.status === 'reserved' && {
@@ -801,6 +825,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   input: {
+    color: '#000',
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
@@ -827,6 +852,7 @@ const styles = StyleSheet.create({
   },
 
   editInputInline: {
+    color: '#000',
     flex: 1,
     borderBottomWidth: 1,
     borderColor: '#ccc',
@@ -883,5 +909,17 @@ const styles = StyleSheet.create({
 
   reservedText: {
     color: '#f9a825', // rumena
+  },
+
+  notesBox: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 15,
+    color: '#000',
+    minHeight: 44,
+    backgroundColor: '#fafafa',
   },
 });

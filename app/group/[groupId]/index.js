@@ -1,26 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
-  View,
+  FlatList,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
-  FlatList,
   TouchableOpacity,
+  View,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
 
 import AddCategoryModal from '../../../components/AddCategoryModal';
 import EditCategoryModal from '../../../components/EditCategoryModal';
 import { addCategory, getCategories, updateCategory } from '../../../services/categoryService';
 
 //za slike
-import { uploadCategoryImage } from '../../../services/categoryImageService';
-import { pickFromGallery, takePhoto } from '../../../components/ImagePickerSheet';
-import AnchorMenu from '../../../components/AnchorMenu';
 import { Alert, Image } from 'react-native';
+import AnchorMenu from '../../../components/AnchorMenu';
+import { pickFromGallery, takePhoto } from '../../../components/ImagePickerSheet';
+import { uploadCategoryImage } from '../../../services/categoryImageService';
 
 //import { Alert } from 'react-native';
-import { toggleFavorite, deleteCategory } from '../../../services/categoryService';
+import { deleteCategory, toggleFavorite } from '../../../services/categoryService';
 
 import { router } from 'expo-router';
 
